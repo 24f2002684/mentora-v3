@@ -216,7 +216,7 @@
 {% block extra_js %}
 <script>
   function toggleSelfTask(id, checkbox) {
-    fetch(`/student/tasks/self/${id}/toggle/`, {
+    fetch(`/student/self-tasks/${id}/toggle/`, {
       method: 'POST',
       headers: {
         'X-CSRFToken': Mentora.getCsrfToken()
@@ -226,7 +226,7 @@
     .then(data => {
       if (data.status === 'success') {
         Mentora.showToast(data.is_completed ? 'Self-task marked complete!' : 'Task reopened', 'success');
-        setTimeout(() => location.reload(), 600);
+        setTimeout(() => location.reload(), 400);
       }
     });
   }

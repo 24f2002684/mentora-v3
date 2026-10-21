@@ -10,6 +10,15 @@
 <style>
   .katex-display { margin: 0.5em 0; overflow-x: auto; overflow-y: hidden; }
   .chat-bubble { font-size: 0.95rem; line-height: 1.6; }
+  .chat-bubble .math-content p:last-child { margin-bottom: 0; }
+  .chat-bubble .math-content strong { font-weight: 700; color: inherit; }
+  .chat-bubble .math-content em { font-style: italic; }
+  .chat-bubble .math-content ul, .chat-bubble .math-content ol { padding-left: 1.25rem; margin-bottom: 0.5rem; }
+  .chat-bubble .math-content li { margin-bottom: 0.25rem; }
+  .chat-bubble .math-content code { font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.88em; background: rgba(0, 0, 0, 0.06); padding: 0.15em 0.35em; border-radius: 4px; }
+  .chat-bubble .math-content pre { background: rgba(0, 0, 0, 0.06); padding: 0.75rem 1rem; border-radius: 6px; overflow-x: auto; margin: 0.5rem 0; }
+  .chat-bubble .math-content pre code { background: none; padding: 0; }
+  .chat-bubble .math-content blockquote { border-left: 3px solid var(--primary-accent); padding-left: 0.75rem; margin: 0.5rem 0; opacity: 0.85; }
 </style>
 {% endblock %}
 
@@ -48,7 +57,7 @@
                 {% if msg.role == 'user' %}{{ student.name|slice:":1"|upper }}{% else %}<i class="bi bi-stars"></i>{% endif %}
               </div>
               <div class="chat-bubble">
-                <div class="math-content" style="white-space: pre-wrap;">{{ msg.content }}</div>
+                <div class="math-content" data-role="{{ msg.role }}"><script type="text/template" class="raw-msg">{{ msg.content }}</script></div>
                 <div class="text-end mt-1" style="font-size: 0.68rem; opacity: 0.7;">
                   {{ msg.created_at|date:"H:i" }}
                 </div>
@@ -171,11 +180,20 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Marked for robust Markdown parsing -->
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
 <!-- KaTeX JavaScript and auto-render extension -->
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
 
 <script>
+  if (window.marked) {
+    marked.setOptions({
+      breaks: true,
+      gfm: true
+    });
+  }
+
   const chatMessages = document.getElementById('chatMessages');
   const chatForm = document.getElementById('chatForm');
   const promptInput = document.getElementById('chatPromptInput');
@@ -197,6 +215,16 @@
     promptInput.focus();
   }
 
+  function formatMessageText(text, role) {
+    if (role === 'user') {
+      return escapeHtml(text);
+    }
+    if (window.marked) {
+      return marked.parse(text);
+    }
+    return escapeHtml(text);
+  }
+
   // Render LaTeX using KaTeX
   function renderAllMath() {
     if (window.renderMathInElement) {
@@ -212,8 +240,20 @@
     }
   }
 
-  window.addEventListener('load', function() {
+  // Render existing messages on page load
+  function renderInitialMessages() {
+    document.querySelectorAll('.math-content').forEach(function(el) {
+      const rawScript = el.querySelector('script.raw-msg');
+      const role = el.getAttribute('data-role');
+      if (rawScript) {
+        el.innerHTML = formatMessageText(rawScript.textContent, role);
+      }
+    });
     renderAllMath();
+  }
+
+  window.addEventListener('load', function() {
+    renderInitialMessages();
   });
 
   // Enter key submits prompt, Shift+Enter makes newline
@@ -304,12 +344,13 @@
   function appendMessage(role, content, time) {
     const msgDiv = document.createElement('div');
     msgDiv.className = `chat-message ${role === 'user' ? 'student' : 'mentor'}`;
+    const formattedHtml = formatMessageText(content, role);
     msgDiv.innerHTML = `
       <div class="chat-avatar ${role === 'user' ? 'user-avatar' : 'ai-avatar'}">
         ${role === 'user' ? '{{ student.name|slice:":1"|upper }}' : '<i class="bi bi-stars"></i>'}
       </div>
       <div class="chat-bubble">
-        <div class="math-content" style="white-space: pre-wrap;">${escapeHtml(content)}</div>
+        <div class="math-content" data-role="${role}">${formattedHtml}</div>
         <div class="text-end mt-1" style="font-size: 0.68rem; opacity: 0.7;">${time}</div>
       </div>
     `;

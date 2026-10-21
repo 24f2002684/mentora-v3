@@ -152,9 +152,17 @@
                 <!-- Update Progress Form -->
                 <form action="{% url 'student_goal_update_status' goal.id %}" method="post" class="d-flex align-items-center gap-1 m-0">
                   {% csrf_token %}
-                  <input type="number" name="progress_percentage" min="0" max="100" value="{{ goal.progress_percentage }}" class="form-control form-control-sm mentora-form-control p-1 text-center" style="width: 55px;">
+                  <input type="number" name="progress_percentage" min="0" max="100" value="{{ goal.progress_percentage }}" class="form-control form-control-sm mentora-form-control p-1 text-center" style="width: 55px;" title="Set progress percentage">
                   <button type="submit" class="btn btn-mentora-subtle btn-sm p-1 px-2" title="Update Progress">
                     <i class="bi bi-arrow-repeat"></i>
+                  </button>
+                </form>
+
+                <!-- Delete Goal Button -->
+                <form action="{% url 'student_goal_delete' goal.id %}" method="post" class="m-0" onsubmit="return confirm('Are you sure you want to delete the goal: {{ goal.title|escapejs }}? This action cannot be undone.');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm p-1 px-2" title="Delete Goal">
+                    <i class="bi bi-trash3"></i>
                   </button>
                 </form>
               </div>

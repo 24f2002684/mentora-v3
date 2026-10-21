@@ -82,7 +82,7 @@
         {% elif user.is_trustee %}
           <li><a class="dropdown-item small" href="{% url 'trustee_analytics' %}"><i class="bi bi-pie-chart me-2"></i>Analytics</a></li>
         {% endif %}
-        <li><a class="dropdown-item small" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key me-2"></i>Change Password</a></li>
+        <li><a class="dropdown-item small" href="{% url 'auth_change_password' %}"><i class="bi bi-key me-2"></i>Change Password</a></li>
         <li><hr class="dropdown-divider"></li>
         <li>
           <form action="{% url 'auth_logout' %}" method="post" class="px-2 m-0">
@@ -95,35 +95,6 @@
       </ul>
     </div>
   </div>
-
-  <!-- Change Password Modal -->
-  <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
-      <div class="modal-content">
-        <form method="post" action="{% url 'auth_change_password' %}">
-          {% csrf_token %}
-          <div class="modal-header">
-            <h5 class="modal-title h6 fw-bold"><i class="bi bi-key-fill text-primary me-2"></i>Change Account Password</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p class="small text-muted mb-3">Update your login password for Mentora VRCF.</p>
-            <div class="mb-3">
-              <label class="form-label small fw-bold">New Password *</label>
-              <input type="password" name="new_password" class="form-control form-control-mentora" required minlength="6" placeholder="Min. 6 characters">
-            </div>
-            <div class="mb-2">
-              <label class="form-label small fw-bold">Confirm New Password *</label>
-              <input type="password" name="confirm_password" class="form-control form-control-mentora" required minlength="6" placeholder="Re-enter password">
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary btn-sm">Update Password</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
 </header>
+
 

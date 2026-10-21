@@ -100,7 +100,6 @@ class SocraticMentorService:
                     contents=full_prompt,
                     config=types.GenerateContentConfig(
                         system_instruction=SOCRATIC_SYSTEM_PROMPT,
-                        max_output_tokens=800,
                     )
                 )
                 

@@ -177,6 +177,119 @@
         </div>
       {% endif %}
     </div>
+
+    <!-- Developmental Goals -->
+    <div class="mentora-card mb-4" id="developmental-goals">
+      <div class="mentora-card-header">
+        <h3 class="mentora-card-title">
+          <i class="bi bi-trophy-fill text-primary"></i> Developmental Goals
+        </h3>
+        <a href="{% url 'student_vision' %}" class="small text-decoration-none">Manage in Vision &rarr;</a>
+      </div>
+      {% if active_goals %}
+        <div class="d-flex flex-column gap-3">
+          {% for goal in active_goals %}
+            <div class="p-3 rounded-3 border" style="background-color: var(--bg-surface-alt);">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge-vrcf {% if goal.goal_type == 'LONG_TERM' %}badge-vrcf-teal{% else %}badge-vrcf-neutral{% endif %}">
+                      {{ goal.get_goal_type_display }}
+                    </span>
+                    <span class="badge-vrcf {% if goal.priority == 'HIGH' %}badge-vrcf-danger{% elif goal.priority == 'MEDIUM' %}badge-vrcf-warning{% else %}badge-vrcf-neutral{% endif %}">
+                      {{ goal.get_priority_display }}
+                    </span>
+                  </div>
+                  <h4 class="h6 fw-bold mb-1">{{ goal.title }}</h4>
+                </div>
+                <!-- Delete Goal Button -->
+                <form action="{% url 'student_goal_delete' goal.id %}" method="post" class="m-0" onsubmit="return confirm('Are you sure you want to delete the goal: {{ goal.title|escapejs }}? This action cannot be undone.');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm p-1 px-2" title="Delete Goal">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </form>
+              </div>
+              <div class="d-flex align-items-center gap-3 mt-2">
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between small text-muted mb-1">
+                    <span>Progress</span>
+                    <span class="fw-bold">{{ goal.progress_percentage }}%</span>
+                  </div>
+                  <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-teal" role="progressbar" style="width: {{ goal.progress_percentage }}%; background-color: var(--primary-accent);" aria-valuenow="{{ goal.progress_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="mentora-empty-state py-3">
+          <i class="bi bi-bullseye empty-state-icon"></i>
+          <div class="empty-state-title">No Active Goals</div>
+          <div class="empty-state-text">Establish developmental goals to track your semester and degree progress.</div>
+          <a href="{% url 'student_vision' %}" class="btn btn-mentora btn-sm mt-2">
+            <i class="bi bi-plus-lg me-1"></i> Add Goal in Vision Workspace
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Personal Self-Tasks -->
+    <div class="mentora-card mb-4" id="self-tasks-card">
+      <div class="mentora-card-header">
+        <h3 class="mentora-card-title">
+          <i class="bi bi-person-check-fill text-primary"></i> Personal Self-Tasks
+        </h3>
+        <button type="button" class="btn btn-mentora btn-sm" data-bs-toggle="modal" data-bs-target="#addDashboardSelfTaskModal">
+          <i class="bi bi-plus-lg"></i> Add Task
+        </button>
+      </div>
+
+      <!-- Active Self Tasks List -->
+      <div class="mb-3">
+        <h6 class="small fw-bold text-muted mb-2 text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">To Do ({{ self_tasks.count }})</h6>
+        {% if self_tasks %}
+          <div class="list-group list-group-flush" id="openSelfTasksList">
+            {% for st in self_tasks %}
+              <div class="list-group-item px-0 py-2 border-bottom d-flex align-items-center justify-content-between" style="background: transparent;" id="selfTaskRow{{ st.id }}">
+                <div class="d-flex align-items-center gap-3">
+                  <input type="checkbox" class="form-check-input mt-0 fs-5 cursor-pointer" id="dashStCheck{{ st.id }}" onchange="toggleDashboardSelfTask({{ st.id }}, this)">
+                  <div>
+                    <label class="fw-semibold small mb-0 d-block cursor-pointer" for="dashStCheck{{ st.id }}" id="dashStLabel{{ st.id }}">{{ st.title }}</label>
+                    {% if st.due_date %}
+                      <small class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-calendar3 me-1"></i>Due: {{ st.due_date|date:"M d, Y" }}</small>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted small py-2 mb-0" id="noOpenSelfTasksMsg">All caught up! No open self-tasks.</p>
+        {% endif %}
+      </div>
+
+      <!-- Completed Self Tasks Section -->
+      <div class="border-top pt-3" id="completedSelfTasksSection">
+        <h6 class="small fw-bold text-muted mb-2 text-uppercase d-flex align-items-center gap-2" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+          <i class="bi bi-check2-circle text-success"></i> Completed Self-Tasks (<span id="completedCountBadge">{{ self_tasks_completed.count }}</span>)
+        </h6>
+        <div class="list-group list-group-flush" id="completedSelfTasksList">
+          {% if self_tasks_completed %}
+            {% for st in self_tasks_completed %}
+              <div class="list-group-item px-0 py-2 border-bottom d-flex justify-content-between align-items-center text-muted small" style="background: transparent;">
+                <span><i class="bi bi-check-circle-fill text-success me-2"></i><s>{{ st.title }}</s></span>
+                <span style="font-size: 0.72rem;">{{ st.completed_at|date:"M d, Y"|default:"Completed" }}</span>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted small py-1 mb-0" id="noCompletedSelfTasksMsg">Completed self-tasks will be moved here.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Right Column: Socratic AI Card & Recent Feedback -->
@@ -278,4 +391,72 @@
     </div>
   </div>
 </div>
+
+<!-- Add Self-Task Modal -->
+<div class="modal fade" id="addDashboardSelfTaskModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title h6 fw-bold">Create Personal Self-Task</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{% url 'student_self_task_create' %}" method="post">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="mentora-form-label">Task Title *</label>
+            <input type="text" name="title" class="form-control mentora-form-control" required placeholder="e.g. Complete practice problem set 4">
+          </div>
+          <div class="mb-3">
+            <label class="mentora-form-label">Due Date</label>
+            <input type="date" name="due_date" class="form-control mentora-form-control">
+          </div>
+          <div class="mb-3">
+            <label class="mentora-form-label">Notes / Description</label>
+            <textarea name="description" rows="2" class="form-control mentora-form-control" placeholder="Optional context or steps..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-mentora">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+  function toggleDashboardSelfTask(id, checkbox) {
+    const label = document.getElementById(`dashStLabel${id}`);
+    const row = document.getElementById(`selfTaskRow${id}`);
+    if (label) {
+      label.style.textDecoration = 'line-through';
+      label.classList.add('text-muted');
+    }
+    fetch(`/student/self-tasks/${id}/toggle/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': Mentora.getCsrfToken()
+      }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'success') {
+        Mentora.showToast(data.is_completed ? 'Self-task marked complete and moved to completed section!' : 'Task reopened', 'success');
+        setTimeout(() => location.reload(), 450);
+      }
+    })
+    .catch(() => {
+      if (label) {
+        label.style.textDecoration = 'none';
+        label.classList.remove('text-muted');
+      }
+      checkbox.checked = !checkbox.checked;
+      Mentora.showToast('Failed to update task status.', 'danger');
+    });
+  }
+</script>
+{% endblock %}
+

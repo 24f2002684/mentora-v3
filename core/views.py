@@ -154,25 +154,39 @@ def mark_all_notifications_read_view(request):
 def change_password_view(request):
     """
     Self-service password update for scholars, mentors, and administrators.
+    Supports GET (displays change password page) and POST (processes password change).
     """
     if request.method == 'POST':
+        current_password = request.POST.get('current_password', '').strip()
         new_password = request.POST.get('new_password', '').strip()
         confirm_password = request.POST.get('confirm_password', '').strip()
-        
+
+        if current_password and not request.user.check_password(current_password):
+            messages.error(request, "The current password you entered is incorrect.")
+            return render(request, 'auth/change_password.html')
+
         if not new_password or len(new_password) < 6:
-            messages.error(request, "Password must be at least 6 characters.")
-            return redirect(request.META.get('HTTP_REFERER', 'role_redirect'))
-            
+            messages.error(request, "New password must be at least 6 characters long.")
+            return render(request, 'auth/change_password.html')
+
         if new_password != confirm_password:
-            messages.error(request, "Passwords do not match.")
-            return redirect(request.META.get('HTTP_REFERER', 'role_redirect'))
-            
+            messages.error(request, "New passwords do not match. Please re-enter.")
+            return render(request, 'auth/change_password.html')
+
         request.user.set_password(new_password)
         request.user.save()
         from django.contrib.auth import update_session_auth_hash
         update_session_auth_hash(request, request.user)
-        messages.success(request, "Your password has been successfully updated!")
-        return redirect(request.META.get('HTTP_REFERER', 'role_redirect'))
-        
-    return redirect('role_redirect')
+
+        AuditEvent.objects.create(
+            actor=request.user,
+            event_type='PASSWORD_CHANGED',
+            description=f"User {request.user.username} updated their account password."
+        )
+
+        messages.success(request, "Your password has been changed successfully!")
+        return redirect('role_redirect')
+
+    return render(request, 'auth/change_password.html', {'active_nav': 'settings'})
+
 

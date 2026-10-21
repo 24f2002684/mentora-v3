@@ -52,8 +52,9 @@ def dashboard_view(request):
         reviewed_at__isnull=False
     ).select_related('task', 'reviewed_by').order_by('-reviewed_at')[:3]
 
-    # 5. Self Tasks
-    self_tasks = student.self_tasks.filter(is_completed=False)[:3]
+    # 5. Self Tasks (both open and recently completed)
+    self_tasks = student.self_tasks.filter(is_completed=False).order_by('due_date', '-created_at')[:6]
+    self_tasks_completed = student.self_tasks.filter(is_completed=True).order_by('-completed_at')[:6]
 
     # 6. Learning Streak (calculated from activity / self-tasks / submissions)
     completed_self_tasks = student.self_tasks.filter(is_completed=True).count()
@@ -85,6 +86,7 @@ def dashboard_view(request):
         'overdue_tasks': overdue_tasks,
         'recent_reviews': recent_reviews,
         'self_tasks': self_tasks,
+        'self_tasks_completed': self_tasks_completed,
         'streak_days': streak_days,
         'total_completed_activities': total_completed_activities,
         'assessed_competencies_count': assessed_competencies_count,
@@ -240,6 +242,21 @@ def goal_update_status_view(request, goal_id):
         goal.save()
         messages.success(request, f"Goal '{goal.title}' updated.")
     return redirect('student_vision')
+
+
+@student_required
+@require_POST
+def goal_delete_view(request, goal_id):
+    """
+    Safely deletes a developmental goal created by the scholar.
+    """
+    student = get_object_or_404(StudentProfile, user=request.user)
+    goal = get_object_or_404(Goal, id=goal_id, student=student)
+    goal_title = goal.title
+    goal.delete()
+    messages.success(request, f"Developmental goal '{goal_title}' has been successfully deleted.")
+    return redirect(request.META.get('HTTP_REFERER', 'student_vision'))
+
 
 
 @student_required
@@ -424,10 +441,17 @@ def self_task_toggle_view(request, task_id):
     task = get_object_or_404(SelfTask, id=task_id, student=student)
     
     task.is_completed = not task.is_completed
-    task.completed_at = datetime.now() if task.is_completed else None
-    task.save()
+    from django.utils import timezone
+    task.completed_at = timezone.now() if task.is_completed else None
+    task.save(update_fields=['is_completed', 'completed_at'])
 
-    return JsonResponse({'status': 'success', 'is_completed': task.is_completed})
+    return JsonResponse({
+        'status': 'success',
+        'is_completed': task.is_completed,
+        'task_id': task.id,
+        'title': task.title,
+        'completed_at': task.completed_at.strftime('%b %d, %Y') if task.completed_at else ''
+    })
 
 
 @student_required
