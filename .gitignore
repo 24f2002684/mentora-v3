@@ -21,34 +21,46 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environment
+# Virtual Environments
 .venv/
 venv/
 ENV/
+env.bak/
+venv.bak/
 
-# PostgreSQL local cluster
+# Local PostgreSQL Cluster & Backups
 pg_data/
 *.log
+*.dump
+*.sql
+*.bak
 
-# Environment variables
+# Environment Variables & Secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
-# Django
-*.log
+# Django Runtime Artifacts & Static Collection
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
 media/
 staticfiles/
 
-# IDE
+# Private Student Data Exports & Generated Reports
+exports/
+reports/*.pdf
+*export*.xlsx
+*scholar*.xlsx
+temp_*.xlsx
+*.xlsx.bak
+
+# IDE & Editors
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# OS
+# OS Artifacts
 .DS_Store
 Thumbs.db

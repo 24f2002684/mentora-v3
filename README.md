@@ -136,61 +136,215 @@ Mentora enforces granular authorization across three primary foundation roles pl
 
 ## 5. Automated Test Suite
 
-Mentora includes 22 automated integration tests covering authentication, role-based redirects, student data isolation, mentor task workflows, ReportLab PDF generation, trustee governance, and Socratic AI fallback handling.
+Mentora includes 23 automated integration and workflow tests covering authentication, role-based redirects, student data isolation, multi-mentor task assignments, ReportLab PDF generation, trustee governance, and Socratic AI fallback handling.
 
-To run the automated test suite:
-```bash
+### Running Tests Locally (Windows PowerShell / macOS / Linux)
+
+```powershell
+# Windows PowerShell:
+.\.venv\Scripts\python.exe manage.py test --noinput
+
+# Linux / macOS:
 python manage.py test --noinput
 ```
 
-**Test Verification Summary**:
+**Verification Summary**:
 ```text
 ----------------------------------------------------------------------
-Ran 22 tests in 67.718s
+Ran 23 tests in 47.821s
 
 OK
+Destroying test database for alias 'default'...
+Found 23 test(s).
 System check identified no issues (0 silenced).
 ```
 
 ---
 
-## 6. Production Deployment Guidance
+## 6. Render Cloud Deployment Guide
 
-### Recommended: Conventional Production Host (VPS / Cloud Run / AWS EC2 / Render)
-A conventional Python WSGI server with Gunicorn, WhiteNoise, and managed PostgreSQL is recommended:
-```bash
-gunicorn mentora.wsgi:application --bind 0.0.0.0:8000 --workers 3
-```
+This application is fully prepared for zero-downtime deployment on [Render](https://render.com/) with a managed PostgreSQL database, WhiteNoise static file caching, and Gunicorn WSGI.
 
-**Production Checklist**:
-1. Set `DEBUG=False` in `.env`.
-2. Generate a cryptographically strong `SECRET_KEY`.
-3. Set `SESSION_COOKIE_SECURE=True` and `CSRF_COOKIE_SECURE=True` for HTTPS.
-4. Set `ALLOWED_HOSTS` to your production domain (e.g. `mentora.vrcf.org`).
-5. Configure persistent object storage (e.g., AWS S3 or GCP Cloud Storage) for uploaded scholar photos and submission attachments.
+### A. Deployment Architecture
 
-### Vercel Deployment Considerations
-If deploying to Vercel via `@vercel/python`:
-- Requires an external managed PostgreSQL database (e.g., Neon or AWS RDS).
-- Media files must use remote S3/GCS storage since serverless functions have ephemeral local filesystems.
-- Migrations and student import must be executed during CI/CD build steps or from an administrative CLI, not during HTTP request handling.
+| Component | Service Type on Render | Specification |
+|---|---|---|
+| **Web Service** | Web Service (Python 3) | `gunicorn mentora.wsgi:application` |
+| **Build Script** | Shell script (`build.sh`) | Installs deps, collects static files, applies migrations |
+| **Database** | PostgreSQL | Render Managed PostgreSQL (PostgreSQL 16) |
+| **Static Files** | WhiteNoise | Compressed Manifest Storage with cache busting |
+| **Uploads / Media** | Persistent Disk or Local | `MEDIA_ROOT` served via `re_path` |
+
+### B. Build & Start Commands
+
+- **Build Command**:
+  ```bash
+  ./build.sh
+  ```
+- **Start Command**:
+  ```bash
+  gunicorn mentora.wsgi:application
+  ```
+
+### C. Required Render Environment Variables
+
+Configure these in the Render Dashboard under **Environment Variables**:
+
+| Variable Name | Required | Example / Recommended Value | Description |
+|---|---|---|---|
+| `DATABASE_URL` | **Yes** | `postgres://user:pass@dpg-xxx.oregon-postgres.render.com/mentora_db` | Internal Database URL from your Render PostgreSQL instance |
+| `SECRET_KEY` | **Yes** | *Generate a 50+ character random string* | Cryptographic signing key. Never use the default in production |
+| `DEBUG` | **Yes** | `False` | Disables debug mode and activates security features |
+| `ALLOWED_HOSTS` | Optional | `your-app.onrender.com,localhost` | Render automatically populates `RENDER_EXTERNAL_HOSTNAME` if omitted |
+| `CSRF_TRUSTED_ORIGINS` | Optional | `https://your-app.onrender.com` | Automatically derived from `RENDER_EXTERNAL_HOSTNAME`, or set explicitly |
+| `GEMINI_API_KEY` | **Yes** | `AIzaSy...` | Google Gemini API key for the Socratic AI Mentor |
+| `GEMINI_MODEL` | Optional | `gemini-2.5-flash` | Gemini model identifier (default: `gemini-2.5-flash`) |
+| `SESSION_COOKIE_SECURE`| Optional | `True` | Forces HTTPS for session cookies (defaults to `True` when `DEBUG=False`) |
+| `CSRF_COOKIE_SECURE` | Optional | `True` | Forces HTTPS for CSRF cookies (defaults to `True` when `DEBUG=False`) |
+| `SECURE_SSL_REDIRECT` | Optional | `True` | Redirects all HTTP traffic to HTTPS (defaults to `True` when `DEBUG=False`) |
+| `MEDIA_ROOT` | Optional | `/var/data/media` | Path if a Render Persistent Disk is attached for scholar uploads |
 
 ---
 
-## 7. Database Backup & Restore
+### D. Step-by-Step Render Deployment Instructions
 
-### Backup
-```bash
-pg_dump -U postgres -h 127.0.0.1 -p 5433 -F c -b -v -f mentora_db_backup.dump mentora_db
-```
+#### Step 1: Create a PostgreSQL Database on Render
+1. Log in to your [Render Dashboard](https://dashboard.render.com/).
+2. Click **New +** and select **PostgreSQL**.
+3. Fill in the details:
+   - **Name**: `mentora-postgres`
+   - **Database**: `mentora_db`
+   - **User**: `mentora_user`
+   - **Region**: Choose the region closest to you (e.g. *Singapore* or *Oregon*).
+   - **Plan**: *Free* or *Starter*.
+4. Click **Create Database**.
+5. Once provisioned, locate the **Internal Database URL** (e.g., `postgres://mentora_user:password@dpg-xxxx:5432/mentora_db`). Copy this connection string.
 
-### Restore
-```bash
-pg_restore -U postgres -h 127.0.0.1 -p 5433 -d mentora_db -v mentora_db_backup.dump
+#### Step 2: Create the Web Service on Render
+1. In the Render Dashboard, click **New +** and select **Web Service**.
+2. Connect your GitHub repository (`mentora-v3`).
+3. Configure the service settings:
+   - **Name**: `mentora-vrcf`
+   - **Region**: Select the **same region** as your PostgreSQL database.
+   - **Branch**: `main`
+   - **Runtime**: `Python 3`
+   - **Build Command**: `./build.sh`
+   - **Start Command**: `gunicorn mentora.wsgi:application`
+   - **Plan**: *Free* or *Starter*.
+
+#### Step 3: Add Environment Variables
+1. Scroll down to **Environment Variables** (or open the **Environment** tab).
+2. Add each key-value pair listed in the table above:
+   - `DATABASE_URL`: Paste the Internal Database URL from Step 1.
+   - `SECRET_KEY`: Enter a secure random string (Render can generate this automatically).
+   - `DEBUG`: `False`
+   - `GEMINI_API_KEY`: Enter your Google Gemini API key.
+   - `GEMINI_MODEL`: `gemini-2.5-flash`
+3. Click **Create Web Service**.
+
+#### Step 4: Verify the Build & Deployment
+Render will automatically execute `./build.sh`:
+1. Installs dependencies from `requirements.txt`.
+2. Runs `python manage.py collectstatic --no-input` (WhiteNoise caches all CSS, JS, and branding logos).
+3. Runs `python manage.py migrate --no-input` (applies all schema migrations to your online PostgreSQL database).
+4. Starts Gunicorn with `gunicorn mentora.wsgi:application`.
+
+Once the logs display `==> Your service is live at https://mentora-vrcf.onrender.com`, the web platform is running!
+
+---
+
+### E. Importing the Real 43 VRCF Scholars into Production
+
+> [!IMPORTANT]
+> To preserve data integrity and prevent unintentional overwrites, the student workbook is **NOT** automatically imported during every deployment.
+> Import the 43 scholars once into your new production PostgreSQL database following this procedure.
+
+1. Open your Web Service in the Render Dashboard.
+2. Click on the **Shell** tab on the left menu (or connect via SSH).
+3. **Validate the workbook first (Dry Run)**:
+   ```bash
+   python manage.py import_students "prereq_data/VRCF Student DB.xlsx" --dry-run
+   ```
+   *Expected output*: `Identified 43 populated scholar rows. Dry run validation complete.`
+
+4. **Execute the Real Import**:
+   ```bash
+   python manage.py import_students "prereq_data/VRCF Student DB.xlsx"
+   ```
+   *Output*:
+   ```text
+   === Mentora Student Importer ===
+   Workbook Path: /opt/render/project/src/prereq_data/VRCF Student DB.xlsx
+   Mode: REAL IMPORT
+   Active Sheet: Form Responses 1 (Max rows: 44)
+   Found 17 header columns.
+   Identified 43 populated scholar rows.
+   Seeded 10 core competencies.
+   Seeded 4 curated academic resources.
+   Seeded Admin, Trustee, and 4 Mentor foundation accounts (Lead, Manikandan, Avanthikaa, Ram Kumar).
+   ----------------------------------------------------------------------------------------------------
+   [1/43] VRCF-003 - Lakshanar (Cohort 1) -> User: lakshanar@gmail.com
+   ...
+   [43/43] VRCF-032 - Suhail Akthar S M (Cohort 2) -> User: suhailmobina95@gmail.com
+   ----------------------------------------------------------------------------------------------------
+   Successfully imported and verified 43 VRCF scholars into PostgreSQL.
+   ```
+
+All 43 scholar accounts, foundation trustee, administrators, and mentors (**Manikandan**, **Avanthikaa**, and **Ram Kumar**) are now live in the production database!
+
+---
+
+### F. Persistent Storage for Uploaded Media Files
+
+- **ReportLab PDF Growth Reports** are generated in-memory (`io.BytesIO`) and streamed directly via HTTP. They do not touch the disk and are never lost on redeployment.
+- **Scholar Avatars, Vision Boards & Task Attachments** are saved to `MEDIA_ROOT`.
+  - On Render's Free tier, the filesystem is ephemeral and resets on each redeploy.
+  - To persist user uploads across redeploys, add a **Render Disk** under the **Disks** tab:
+    - **Mount Path**: `/var/data/media`
+    - **Size**: 1 GB (or as needed)
+    - Set the environment variable: `MEDIA_ROOT=/var/data/media`
+  - Mentora's [urls.py](mentora/urls.py) automatically serves media from `MEDIA_ROOT` via `re_path`, ensuring photos and submissions remain available without requiring external S3 setup.
+
+---
+
+## 7. Windows-Friendly Local Testing
+
+To test the application locally on Windows prior to deployment:
+
+```powershell
+# 1. Activate Virtual Environment
+.\.venv\Scripts\activate
+
+# 2. Run Django System Checks
+.\.venv\Scripts\python.exe manage.py check
+
+# 3. Test Static Collection
+.\.venv\Scripts\python.exe manage.py collectstatic --noinput
+
+# 4. Run Automated Test Suite
+.\.venv\Scripts\python.exe manage.py test --noinput
+
+# 5. Start Development Server
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
 ```
 
 ---
 
-## 8. License & Attribution
+## 8. Database Backup & Restore
+
+### Backup Local or Remote PostgreSQL Database:
+```bash
+pg_dump -U postgres -h <HOST> -p <PORT> -F c -b -v -f mentora_db_backup.dump <DBNAME>
+```
+
+### Restore to PostgreSQL Database:
+```bash
+pg_restore -U postgres -h <HOST> -p <PORT> -d <DBNAME> -v mentora_db_backup.dump
+```
+
+---
+
+## 9. License & Attribution
 
 Developed for the **Vasumathi Ramaswami Centenary Foundation (VRCF)**. All rights reserved.
+
