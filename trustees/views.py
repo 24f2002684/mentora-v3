@@ -192,8 +192,8 @@ def send_feedback_view(request):
                 recipient=student.user,
                 notification_type=Notification.NotificationType.FEEDBACK_RECEIVED,
                 title=f"Message from Foundation Trustee: {title}",
-                message=f"Trustee {trustee.name} shared guidance and encouragement with you.",
-                link="/student/vision/"
+                message=f"Trustee {trustee.name}: {message[:120]}...",
+                link="/student/dashboard/#trustee-feedback"
             )
 
         AuditEvent.objects.create(

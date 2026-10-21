@@ -8,13 +8,13 @@ from django.conf.urls.static import static
 from django.shortcuts import redirect
 
 urlpatterns = [
+    # Core authentication & administration (must be before admin.site.urls to avoid catch-all interception)
+    path('', include('core.urls')),
+
     path('admin/', admin.site.urls),
     
     # Root redirects to role router
     path('', lambda request: redirect('role_redirect')),
-    
-    # Core authentication & administration
-    path('', include('core.urls')),
 
     # Role specific modules
     path('student/', include('students.urls')),

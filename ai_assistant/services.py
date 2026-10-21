@@ -61,7 +61,7 @@ class SocraticMentorService:
         )
 
         client = cls.get_client()
-        model_name = getattr(settings, 'GEMINI_MODEL', 'gemini-3.8-flash') or 'gemini-3.8-flash'
+        model_name = getattr(settings, 'GEMINI_MODEL', 'gemini-3.5-flash-lite') or 'gemini-3.5-flash-lite'
 
         # Assemble personalized context
         vision = getattr(student, 'vision', None)

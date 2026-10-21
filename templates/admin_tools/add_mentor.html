@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add New Mentor — Mentora Administration{% endblock %}
+{% block page_title %}Onboard New Mentor{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="mentora-card">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 class="h4 fw-bold mb-1">Add New VRCF Mentor</h2>
+          <p class="text-secondary small mb-0">Create a mentor profile, establish login access, and enable scholar task assignments.</p>
+        </div>
+        <a href="{% url 'trustee_mentors' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i> Back to Mentors
+        </a>
+      </div>
+
+      <form method="post" action="{% url 'admin_mentor_add' %}">
+        {% csrf_token %}
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label for="id_name" class="form-label fw-bold small">Mentor Full Name *</label>
+            <input type="text" name="name" id="id_name" class="form-control form-control-mentora" placeholder="e.g. Manikandan" required>
+          </div>
+          <div class="col-md-6">
+            <label for="id_email" class="form-label fw-bold small">Email Address *</label>
+            <input type="email" name="email" id="id_email" class="form-control form-control-mentora" placeholder="e.g. manikandan@vrcf.org" required>
+            <div class="form-text small">Used for portal login and notifications.</div>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label for="id_designation" class="form-label fw-bold small">Designation / Role</label>
+            <input type="text" name="designation" id="id_designation" class="form-control form-control-mentora" placeholder="e.g. Senior VRCF Mentor" value="Senior VRCF Mentor">
+          </div>
+          <div class="col-md-6">
+            <label for="id_organization" class="form-label fw-bold small">Organization</label>
+            <input type="text" name="organization" id="id_organization" class="form-control form-control-mentora" placeholder="e.g. Vasumathi Ramaswami Centenary Foundation" value="Vasumathi Ramaswami Centenary Foundation">
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label for="id_phone" class="form-label fw-bold small">Phone Number</label>
+            <input type="tel" name="phone" id="id_phone" class="form-control form-control-mentora" placeholder="e.g. +91 98765 43210">
+          </div>
+          <div class="col-md-6">
+            <label for="id_password" class="form-label fw-bold small">Initial Password</label>
+            <input type="text" name="password" id="id_password" class="form-control form-control-mentora" placeholder="Leave empty for auto-generated (mentor@N)">
+            <div class="form-text small">Can be reset anytime by administrators or the mentor.</div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="id_bio" class="form-label fw-bold small">Background / Bio Summary</label>
+          <textarea name="bio" id="id_bio" class="form-control form-control-mentora" rows="3" placeholder="Brief background, domain expertise, or mentorship focus areas..."></textarea>
+        </div>
+
+        <div class="alert alert-light border small text-muted mb-4 d-flex align-items-center gap-2">
+          <i class="bi bi-shield-lock-fill text-primary fs-5"></i>
+          <div>
+            <strong>Access Note:</strong> Upon creation, the mentor can immediately sign in using either their username or email address, create tasks for scholars, review submissions, and manage scholar progress.
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'trustee_mentors' %}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-mentora-primary px-4">
+            <i class="bi bi-person-plus-fill me-1"></i> Register Mentor
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

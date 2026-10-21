@@ -127,7 +127,7 @@
                   <td><span class="badge bg-secondary">{{ ev.event_type }}</span></td>
                   <td class="fw-semibold">{{ ev.actor.username|default:'System' }}</td>
                   <td class="text-secondary">{{ ev.description|truncatewords:10 }}</td>
-                  <td class="text-muted">{{ ev.timestamp|date:"M d, H:i" }}</td>
+                  <td class="text-muted">{{ ev.created_at|date:"M d, H:i" }}</td>
                 </tr>
               {% endfor %}
             </tbody>

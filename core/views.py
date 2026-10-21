@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
@@ -135,3 +136,43 @@ def mark_notification_read_view(request, notif_id):
     
     Notification.objects.filter(id=notif_id, recipient=request.user).update(is_read=True)
     return JsonResponse({'status': 'success'})
+
+
+@require_POST
+def mark_all_notifications_read_view(request):
+    """
+    Marks all unread notifications for the authenticated user as read.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    
+    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    return JsonResponse({'status': 'success'})
+
+
+@login_required
+def change_password_view(request):
+    """
+    Self-service password update for scholars, mentors, and administrators.
+    """
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password', '').strip()
+        confirm_password = request.POST.get('confirm_password', '').strip()
+        
+        if not new_password or len(new_password) < 6:
+            messages.error(request, "Password must be at least 6 characters.")
+            return redirect(request.META.get('HTTP_REFERER', 'role_redirect'))
+            
+        if new_password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect(request.META.get('HTTP_REFERER', 'role_redirect'))
+            
+        request.user.set_password(new_password)
+        request.user.save()
+        from django.contrib.auth import update_session_auth_hash
+        update_session_auth_hash(request, request.user)
+        messages.success(request, "Your password has been successfully updated!")
+        return redirect(request.META.get('HTTP_REFERER', 'role_redirect'))
+        
+    return redirect('role_redirect')
+

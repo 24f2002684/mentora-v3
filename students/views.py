@@ -17,6 +17,7 @@ from students.models import (
 from mentors.models import (
     MentorTask, TaskSubmission, CompetencyAssessment, SupportAlert
 )
+from trustees.models import TrusteeFeedback
 
 
 @student_required
@@ -27,6 +28,9 @@ def dashboard_view(request):
     vision = getattr(student, 'vision', None)
     active_goals = student.goals.filter(status__in=[Goal.Status.NOT_STARTED, Goal.Status.IN_PROGRESS])
     completed_goals_count = student.goals.filter(status=Goal.Status.COMPLETED).count()
+
+    # 1b. Foundation Trustee Guidance & Commendations
+    trustee_feedbacks = TrusteeFeedback.objects.filter(student=student).select_related('trustee', 'linked_goal').order_by('-created_at')
 
     # 2. Learning Milestones
     active_milestones = student.milestones.filter(status__in=[LearningMilestone.Status.PENDING, LearningMilestone.Status.IN_PROGRESS])
@@ -85,6 +89,7 @@ def dashboard_view(request):
         'total_completed_activities': total_completed_activities,
         'assessed_competencies_count': assessed_competencies_count,
         'profile_completion_pct': profile_completion_pct,
+        'trustee_feedbacks': trustee_feedbacks,
         'active_nav': 'dashboard'
     }
     return render(request, 'students/dashboard.html', context)
@@ -167,10 +172,13 @@ def vision_view(request):
         messages.success(request, "Your personal vision statement has been updated.")
         return redirect('student_vision')
 
+    trustee_feedbacks = TrusteeFeedback.objects.filter(student=student).select_related('trustee', 'linked_goal').order_by('-created_at')
+
     context = {
         'student': student,
         'vision': vision,
         'goals': goals,
+        'trustee_feedbacks': trustee_feedbacks,
         'active_nav': 'vision'
     }
     return render(request, 'students/vision.html', context)

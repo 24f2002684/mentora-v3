@@ -16,10 +16,11 @@ def chat_view(request):
 
     # Selected or active conversation
     conv_id = request.GET.get('conversation')
+    is_new = request.GET.get('new') == '1'
     current_conv = None
-    if conv_id:
+    if conv_id and not is_new:
         current_conv = conversations.filter(id=conv_id).first()
-    if not current_conv:
+    elif not is_new:
         current_conv = conversations.first()
 
     messages_list = current_conv.messages.all() if current_conv else []

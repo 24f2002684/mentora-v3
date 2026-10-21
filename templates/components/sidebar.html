@@ -113,6 +113,10 @@
         <i class="bi bi-person-plus-fill"></i>
         <span>Add Scholar</span>
       </a>
+      <a href="{% url 'admin_mentor_add' %}" class="sidebar-nav-item {% if active_nav == 'add_mentor' %}active{% endif %}">
+        <i class="bi bi-person-badge-fill"></i>
+        <span>Add Mentor</span>
+      </a>
       <a href="{% url 'admin_import_view' %}" class="sidebar-nav-item {% if active_nav == 'import' %}active{% endif %}">
         <i class="bi bi-file-earmark-spreadsheet-fill"></i>
         <span>Import / Audit</span>

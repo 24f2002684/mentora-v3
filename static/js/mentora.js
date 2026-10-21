@@ -138,6 +138,65 @@ window.Mentora = (function() {
     }, duration);
   }
 
+  // Notification mark-all-read and badge clearance
+  function initNotifications() {
+    const dropdownToggle = document.getElementById('notifDropdownToggle');
+    const badge = document.getElementById('notifBadge');
+    const headerBadge = document.getElementById('notifHeaderBadge');
+    const markAllBtn = document.getElementById('markAllNotifBtn');
+
+    function clearNotificationBadges() {
+      if (badge) {
+        badge.style.display = 'none';
+      }
+      if (headerBadge) {
+        headerBadge.style.display = 'none';
+      }
+      // Send background request to mark all read
+      fetch('/api/notifications/mark-all-read/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCsrfToken(),
+          'Content-Type': 'application/json'
+        }
+      }).catch(function() {});
+    }
+
+    if (dropdownToggle) {
+      dropdownToggle.addEventListener('show.bs.dropdown', clearNotificationBadges);
+      dropdownToggle.addEventListener('click', function() {
+        if (badge && badge.style.display !== 'none') {
+          clearNotificationBadges();
+        }
+      });
+    }
+
+    if (markAllBtn) {
+      markAllBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        clearNotificationBadges();
+      });
+    }
+
+    // Individual notification clicks
+    const notifLinks = document.querySelectorAll('.notif-link');
+    notifLinks.forEach(function(link) {
+      link.addEventListener('click', function() {
+        const notifId = this.getAttribute('data-notif-id');
+        if (notifId) {
+          fetch(`/api/notifications/${notifId}/read/`, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCsrfToken(),
+              'Content-Type': 'application/json'
+            }
+          }).catch(function() {});
+        }
+      });
+    });
+  }
+
   // Register PWA Service Worker
   function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
@@ -157,6 +216,7 @@ window.Mentora = (function() {
   document.addEventListener('DOMContentLoaded', function() {
     initTheme();
     initMobileSidebar();
+    initNotifications();
     registerServiceWorker();
   });
 

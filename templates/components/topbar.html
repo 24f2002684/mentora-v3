@@ -18,32 +18,35 @@
 
     <!-- Notification Dropdown -->
     <div class="dropdown">
-      <button class="btn btn-mentora-subtle btn-sm position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+      <button class="btn btn-mentora-subtle btn-sm position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notifDropdownToggle">
         <i class="bi bi-bell-fill"></i>
         {% if unread_notifications_count > 0 %}
-          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+          <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
             {{ unread_notifications_count }}
           </span>
         {% endif %}
       </button>
-      <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border" style="width: 320px; max-height: 400px; overflow-y: auto; background-color: var(--bg-surface);">
+      <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border" id="notifDropdownMenu" style="width: 320px; max-height: 400px; overflow-y: auto; background-color: var(--bg-surface);">
         <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
           <span class="fw-bold small">Notifications</span>
-          {% if unread_notifications_count > 0 %}
-            <span class="badge bg-primary rounded-pill small">{{ unread_notifications_count }} new</span>
-          {% endif %}
+          <div class="d-flex align-items-center gap-2">
+            {% if unread_notifications_count > 0 %}
+              <span id="notifHeaderBadge" class="badge bg-primary rounded-pill small">{{ unread_notifications_count }} new</span>
+            {% endif %}
+            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-muted" id="markAllNotifBtn" style="font-size: 0.72rem;">Mark all read</button>
+          </div>
         </div>
         <div class="list-group list-group-flush">
           {% if recent_notifications %}
             {% for notif in recent_notifications %}
-              <div class="list-group-item list-group-item-action p-3 border-bottom" style="background-color: var(--bg-surface);">
+              <div class="list-group-item list-group-item-action p-3 border-bottom notif-item" data-notif-id="{{ notif.id }}" style="background-color: var(--bg-surface);">
                 <div class="d-flex w-100 justify-content-between">
                   <span class="fw-semibold small text-truncate" style="max-width: 200px;">{{ notif.title }}</span>
                   <small class="text-muted" style="font-size: 0.7rem;">{{ notif.created_at|timesince }} ago</small>
                 </div>
                 <p class="mb-1 text-muted small" style="font-size: 0.82rem;">{{ notif.message }}</p>
                 {% if notif.link %}
-                  <a href="{{ notif.link }}" class="small fw-semibold text-decoration-none">View details &rarr;</a>
+                  <a href="{{ notif.link }}" class="small fw-semibold text-decoration-none notif-link" data-notif-id="{{ notif.id }}">View details &rarr;</a>
                 {% endif %}
               </div>
             {% endfor %}
@@ -79,6 +82,7 @@
         {% elif user.is_trustee %}
           <li><a class="dropdown-item small" href="{% url 'trustee_analytics' %}"><i class="bi bi-pie-chart me-2"></i>Analytics</a></li>
         {% endif %}
+        <li><a class="dropdown-item small" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key me-2"></i>Change Password</a></li>
         <li><hr class="dropdown-divider"></li>
         <li>
           <form action="{% url 'auth_logout' %}" method="post" class="px-2 m-0">
@@ -91,4 +95,35 @@
       </ul>
     </div>
   </div>
+
+  <!-- Change Password Modal -->
+  <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+      <div class="modal-content">
+        <form method="post" action="{% url 'auth_change_password' %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title h6 fw-bold"><i class="bi bi-key-fill text-primary me-2"></i>Change Account Password</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="small text-muted mb-3">Update your login password for Mentora VRCF.</p>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">New Password *</label>
+              <input type="password" name="new_password" class="form-control form-control-mentora" required minlength="6" placeholder="Min. 6 characters">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">Confirm New Password *</label>
+              <input type="password" name="confirm_password" class="form-control form-control-mentora" required minlength="6" placeholder="Re-enter password">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm">Update Password</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 </header>
+

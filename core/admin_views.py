@@ -115,7 +115,7 @@ def admin_import_view(request):
     """
     total_scholars = StudentProfile.objects.count()
     cohort_breakdown = StudentProfile.objects.values('cohort').annotate(count=Count('id')).order_by('-cohort')
-    audit_events = AuditEvent.objects.filter(event_type__in=['DATA_IMPORT', 'SCHOLAR_PROVISIONED']).order_by('-timestamp')[:20]
+    audit_events = AuditEvent.objects.filter(event_type__in=['DATA_IMPORT', 'SCHOLAR_PROVISIONED', 'MENTOR_PROVISIONED']).order_by('-created_at')[:20]
 
     context = {
         'total_scholars': total_scholars,
@@ -124,3 +124,98 @@ def admin_import_view(request):
         'active_nav': 'import'
     }
     return render(request, 'admin_tools/import_audit.html', context)
+
+
+@role_required('ADMIN', 'TRUSTEE')
+def admin_mentor_add_view(request):
+    """
+    Allows Foundation Trustees and Admins to onboard new VRCF Mentors
+    with account credentials and organization profile.
+    """
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip().lower()
+        designation = request.POST.get('designation', 'VRCF Mentor').strip()
+        organization = request.POST.get('organization', 'Vasumathi Ramaswami Centenary Foundation').strip()
+        phone = request.POST.get('phone', '').strip()
+        bio = request.POST.get('bio', '').strip()
+        custom_password = request.POST.get('password', '').strip()
+
+        if not name or not email:
+            messages.error(request, "Mentor Full Name and Email Address are strictly required.")
+            return render(request, 'admin_tools/add_mentor.html', {'active_nav': 'add_mentor'})
+
+        if User.objects.filter(email__iexact=email).exists():
+            messages.error(request, f"A user with email '{email}' already exists in the system.")
+            return render(request, 'admin_tools/add_mentor.html', {'active_nav': 'add_mentor'})
+
+        # Derive clean username from email or name
+        base_username = email.split('@')[0].lower().replace('.', '_').replace('-', '_')
+        username = base_username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}_{counter}"
+            counter += 1
+
+        default_pwd = custom_password or f"mentor@{MentorProfile.objects.count() + 1}"
+
+        try:
+            with transaction.atomic():
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=default_pwd,
+                    role=User.Role.MENTOR,
+                    first_name=name.split()[0] if name else '',
+                    last_name=' '.join(name.split()[1:]) if len(name.split()) > 1 else '',
+                    phone=phone
+                )
+                mentor = MentorProfile.objects.create(
+                    user=user,
+                    name=name,
+                    email=email,
+                    phone=phone,
+                    designation=designation or 'VRCF Mentor',
+                    organization=organization or 'Vasumathi Ramaswami Centenary Foundation',
+                    bio=bio
+                )
+                AuditEvent.objects.create(
+                    actor=request.user,
+                    event_type='MENTOR_PROVISIONED',
+                    description=f"Provisioned new VRCF Mentor {name} ({email}) with username '{username}'."
+                )
+
+            messages.success(request, f"Mentor {name} successfully added! Username: '{username}', Default Password: '{default_pwd}'.")
+            return redirect('trustee_mentors')
+        except Exception as e:
+            messages.error(request, f"Error adding mentor: {str(e)}")
+            return render(request, 'admin_tools/add_mentor.html', {'active_nav': 'add_mentor'})
+
+    return render(request, 'admin_tools/add_mentor.html', {'active_nav': 'add_mentor'})
+
+
+@role_required('ADMIN', 'TRUSTEE')
+def admin_mentor_reset_password_view(request, mentor_id):
+    """
+    Allows Trustees and Admins to reset password for a mentor.
+    """
+    mentor = get_object_or_404(MentorProfile, id=mentor_id)
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password', '').strip()
+        if not new_password:
+            messages.error(request, "New password cannot be blank.")
+            return redirect('trustee_mentors')
+
+        mentor.user.set_password(new_password)
+        mentor.user.save()
+
+        AuditEvent.objects.create(
+            actor=request.user,
+            event_type='PASSWORD_RESET',
+            description=f"Trustee {request.user.username} reset password for mentor {mentor.name} ({mentor.user.username})."
+        )
+        messages.success(request, f"Password for mentor {mentor.name} ({mentor.user.username}) successfully updated to '{new_password}'.")
+        return redirect('trustee_mentors')
+
+    return redirect('trustee_mentors')
+
