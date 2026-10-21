@@ -18,29 +18,37 @@
 <!-- Filter & Search Toolbar -->
 <div class="mentora-card mb-4 p-3">
   <div class="row g-2 align-items-center">
-    <div class="col-md-7">
+    <div class="col-lg-6">
       <div class="d-flex flex-wrap gap-1">
-        <a href="?status=all{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if status_filter == 'all' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
+        <a href="?status=all{% if selected_mentor_id %}&mentor_id={{ selected_mentor_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if status_filter == 'all' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
           All Submissions
         </a>
-        <a href="?status=awaiting{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if status_filter == 'awaiting' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
+        <a href="?status=awaiting{% if selected_mentor_id %}&mentor_id={{ selected_mentor_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if status_filter == 'awaiting' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
           <i class="bi bi-hourglass-split me-1"></i> Awaiting Review
         </a>
-        <a href="?status=reviewed{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if status_filter == 'reviewed' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
+        <a href="?status=reviewed{% if selected_mentor_id %}&mentor_id={{ selected_mentor_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if status_filter == 'reviewed' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
           <i class="bi bi-check2-circle me-1"></i> Reviewed
         </a>
-        <a href="?status=resubmission{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if status_filter == 'resubmission' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
+        <a href="?status=resubmission{% if selected_mentor_id %}&mentor_id={{ selected_mentor_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if status_filter == 'resubmission' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
           <i class="bi bi-arrow-repeat me-1"></i> Resubmission Requested
         </a>
       </div>
     </div>
-    <div class="col-md-5">
+    <div class="col-lg-6">
       <form method="get" class="d-flex gap-2">
         <input type="hidden" name="status" value="{{ status_filter }}">
-        <input type="text" name="q" class="form-control form-control-sm form-control-mentora" placeholder="Search scholar, VRCF ID, task..." value="{{ q }}">
-        <button type="submit" class="btn btn-sm btn-mentora">Search</button>
-        {% if q %}
-          <a href="?status={{ status_filter }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-circle"></i></a>
+        <select name="mentor_id" class="form-select form-select-sm form-control-mentora" style="width: 170px;" onchange="this.form.submit()">
+          <option value="">All Mentors</option>
+          {% for m in all_mentors %}
+            <option value="{{ m.id }}" {% if selected_mentor_id == m.id %}selected{% endif %}>
+              {{ m.name }}
+            </option>
+          {% endfor %}
+        </select>
+        <input type="text" name="q" class="form-control form-control-sm form-control-mentora" placeholder="Search scholar, task, mentor..." value="{{ q }}">
+        <button type="submit" class="btn btn-sm btn-mentora">Filter</button>
+        {% if q or selected_mentor_id %}
+          <a href="?status={{ status_filter }}" class="btn btn-sm btn-outline-secondary" title="Clear Filters"><i class="bi bi-x-circle"></i></a>
         {% endif %}
       </form>
     </div>
@@ -75,7 +83,9 @@
             </td>
             <td>
               <div class="fw-semibold small">{{ sub.task.title }}</div>
-              <small class="text-muted">Due: {{ sub.task.due_date|date:"M d, Y" }}</small>
+              <small class="text-muted d-block" style="font-size: 0.75rem;">
+                <i class="bi bi-person-fill text-primary me-1"></i>Mentor: <strong>{{ sub.task.assigned_mentor.name }}</strong> &bull; Due: {{ sub.task.due_date|date:"M d, Y" }}
+              </small>
             </td>
             <td>
               <span class="small text-secondary">{{ sub.submitted_at|date:"M d, Y" }}</span>

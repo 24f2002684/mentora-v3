@@ -1,7 +1,7 @@
 from datetime import date
 from django.test import TestCase, Client
 from django.urls import reverse
-from core.models import User
+from core.models import User, Notification
 from students.models import StudentProfile, Competency
 from mentors.models import (
     MentorProfile, MentorStudentAssignment, MentorTask,
@@ -115,3 +115,69 @@ class MentorWorkflowAndReportTests(TestCase):
         self.assertTrue(res['Content-Disposition'].startswith('attachment; filename='))
         # Ensure PDF magic bytes %PDF
         self.assertTrue(res.content.startswith(b'%PDF'))
+
+    def test_multi_mentor_assignment_and_isolated_notifications(self):
+        # 1. Create mentors Manikandan and Avanthikaa
+        mani_user = User.objects.create_user(
+            username="manikandan", email="manikandan@vrcf.org", password=self.password, role=User.Role.MENTOR
+        )
+        mani_mentor = MentorProfile.objects.create(
+            user=mani_user, name="Manikandan", email="manikandan@vrcf.org"
+        )
+
+        avan_user = User.objects.create_user(
+            username="avanthikaa", email="avanthikaa@vrcf.org", password=self.password, role=User.Role.MENTOR
+        )
+        avan_mentor = MentorProfile.objects.create(
+            user=avan_user, name="Avanthikaa", email="avanthikaa@vrcf.org"
+        )
+
+        # 2. Manikandan assigns a task to Arun Kumar (self.student)
+        self.client.login(username="manikandan", password=self.password)
+        res_mani = self.client.post(reverse('mentor_task_assign'), {
+            'title': 'AI System Design by Manikandan',
+            'instructions': 'Design a scalable multi-tier neural network pipeline',
+            'due_date': '2026-11-20',
+            'priority': 'HIGH',
+            'target_mode': 'specific',
+            'student_ids': [self.student.id],
+        }, follow=True)
+        self.assertEqual(res_mani.status_code, 200)
+
+        # 3. Avanthikaa assigns a different task to Arun Kumar (self.student)
+        self.client.login(username="avanthikaa", password=self.password)
+        res_avan = self.client.post(reverse('mentor_task_assign'), {
+            'title': 'Ethical Governance by Avanthikaa',
+            'instructions': 'Write an analysis on stakeholder accountability',
+            'due_date': '2026-11-25',
+            'priority': 'MEDIUM',
+            'target_mode': 'specific',
+            'student_ids': [self.student.id],
+        }, follow=True)
+        self.assertEqual(res_avan.status_code, 200)
+
+        # 4. Student views their tasks: both tasks must be present and distinct with mentor labels
+        self.client.login(username="scholar_001", password=self.password)
+        res_student = self.client.get(reverse('student_tasks'))
+        self.assertEqual(res_student.status_code, 200)
+        self.assertContains(res_student, "AI System Design by Manikandan")
+        self.assertContains(res_student, "Ethical Governance by Avanthikaa")
+        self.assertContains(res_student, "Manikandan")
+        self.assertContains(res_student, "Avanthikaa")
+
+        # 5. Student submits Manikandan's task
+        task_mani = MentorTask.objects.get(title="AI System Design by Manikandan")
+        res_submit = self.client.post(reverse('student_task_submit', args=[task_mani.id]), {
+            'submission_text': 'Here is the detailed neural system design architecture...',
+            'save_action': 'submit'
+        }, follow=True)
+        self.assertEqual(res_submit.status_code, 200)
+
+        # 6. Verify notification was sent specifically to Manikandan, NOT to Avanthikaa
+        mani_notifs = Notification.objects.filter(recipient=mani_user, notification_type=Notification.NotificationType.SUBMISSION_RECEIVED)
+        avan_notifs = Notification.objects.filter(recipient=avan_user, notification_type=Notification.NotificationType.SUBMISSION_RECEIVED)
+        self.assertEqual(mani_notifs.count(), 1)
+        self.assertEqual(avan_notifs.count(), 0)
+        self.assertIn("Arun Kumar", mani_notifs.first().message)
+        self.assertIn("AI System Design by Manikandan", mani_notifs.first().message)
+

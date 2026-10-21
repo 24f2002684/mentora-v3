@@ -175,6 +175,7 @@
           <thead class="table-light">
             <tr>
               <th>Task Title</th>
+              <th>Assigned By</th>
               <th>Due Date</th>
               <th>Status</th>
               <th>Submission Date</th>
@@ -185,6 +186,11 @@
             {% for t in assigned_tasks %}
               <tr>
                 <td class="fw-semibold">{{ t.title }}</td>
+                <td>
+                  <span class="badge bg-light text-dark border">
+                    <i class="bi bi-person-fill text-primary me-1"></i>{{ t.assigned_mentor.name }}
+                  </span>
+                </td>
                 <td>{{ t.due_date|date:"M d, Y" }}</td>
                 <td>
                   <span class="badge-vrcf {% if t.status == 'REVIEWED' %}badge-vrcf-teal{% elif t.status == 'SUBMITTED' %}badge-vrcf-warning{% else %}badge-vrcf-neutral{% endif %}">
@@ -209,7 +215,7 @@
                 </td>
               </tr>
             {% empty %}
-              <tr><td colspan="5" class="text-center text-muted py-3">No tasks assigned yet.</td></tr>
+              <tr><td colspan="6" class="text-center text-muted py-3">No tasks assigned yet.</td></tr>
             {% endfor %}
           </tbody>
         </table>

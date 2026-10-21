@@ -40,14 +40,17 @@
             <div class="p-4 rounded-3 border" style="background-color: var(--bg-surface-alt);">
               <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
                 <div>
-                  <div class="d-flex align-items-center gap-2 mb-1">
+                  <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                     <span class="badge-vrcf {% if task.status == 'RESUBMISSION_REQUESTED' %}badge-vrcf-warning{% elif task.due_date < today %}badge-vrcf-danger{% else %}badge-vrcf-teal{% endif %}">
                       {{ task.get_status_display }}
                     </span>
                     <span class="badge-vrcf badge-vrcf-neutral">{{ task.get_priority_display }}</span>
+                    <span class="badge bg-primary text-white px-2 py-1" style="font-size: 0.78rem;">
+                      <i class="bi bi-person-fill me-1"></i>From Mentor: <strong>{{ task.assigned_mentor.name }}</strong>
+                    </span>
                   </div>
                   <h4 class="h6 fw-bold mb-1">{{ task.title }}</h4>
-                  <small class="text-muted">Assigned by {{ task.assigned_mentor.name }} &bull; Due: {{ task.due_date|date:"M d, Y" }}</small>
+                  <small class="text-muted"><i class="bi bi-person me-1"></i>Assigned by <strong>{{ task.assigned_mentor.name }}</strong> &bull; <i class="bi bi-calendar-event me-1"></i>Due: {{ task.due_date|date:"M d, Y" }}</small>
                 </div>
 
                 <a href="{% url 'student_task_submit' task.id %}" class="btn btn-mentora btn-sm">
@@ -138,8 +141,14 @@
             <div class="p-3 rounded-3 border" style="background-color: var(--bg-surface-alt);">
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <div>
+                  <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                    <span class="badge bg-primary text-white px-2 py-1" style="font-size: 0.75rem;">
+                      <i class="bi bi-person-fill me-1"></i>Mentor: <strong>{{ task.assigned_mentor.name }}</strong>
+                    </span>
+                    <span class="badge-vrcf badge-vrcf-teal">Reviewed</span>
+                  </div>
                   <h4 class="h6 fw-bold mb-1">{{ task.title }}</h4>
-                  <small class="text-muted">Reviewed by {{ task.assigned_mentor.name }}</small>
+                  <small class="text-muted">Reviewed by <strong>{{ task.submission.reviewed_by.name|default:task.assigned_mentor.name }}</strong></small>
                 </div>
                 {% if task.submission.mentor_rating %}
                   <span class="badge-vrcf badge-vrcf-teal fs-6">{{ task.submission.mentor_rating }}/5 &starf;</span>

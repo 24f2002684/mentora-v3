@@ -39,12 +39,10 @@ def get_mentor_or_admin_profile(user):
 def get_authorized_students(mentor, user):
     """
     Returns queryset of StudentProfiles that this mentor has authorization to view.
-    Admins/superusers can see all. Regular mentors see assigned students.
+    All mentors (Manikandan, Avanthikaa, Ram Kumar, and VRCF foundation mentors)
+    have full access to view, mentor, and assign tasks across all 43 scholars.
     """
-    if user.is_superuser or user.role == 'ADMIN':
-        return StudentProfile.objects.all()
-    assigned_ids = mentor.student_assignments.filter(is_active=True).values_list('student_id', flat=True)
-    return StudentProfile.objects.filter(id__in=assigned_ids)
+    return StudentProfile.objects.all()
 
 
 @mentor_required
@@ -56,21 +54,36 @@ def dashboard_view(request):
     active_tasks = MentorTask.objects.filter(assigned_mentor=mentor, status=MentorTask.Status.ASSIGNED)
     active_tasks_count = active_tasks.count()
     
-    # Submissions awaiting review
-    pending_submissions = TaskSubmission.objects.filter(
-        student__in=authorized_students,
+    # Submissions awaiting review: show tasks assigned by this mentor, or all if admin/superuser
+    my_pending_submissions = TaskSubmission.objects.filter(
+        task__assigned_mentor=mentor,
         is_draft=False,
         task__status=MentorTask.Status.SUBMITTED
-    ).select_related('student', 'task').order_by('-submitted_at')
+    ).select_related('student', 'task', 'task__assigned_mentor').order_by('-submitted_at')
+
+    if my_pending_submissions.exists() or not (request.user.is_superuser or request.user.role == 'ADMIN'):
+        pending_submissions = my_pending_submissions
+    else:
+        pending_submissions = TaskSubmission.objects.filter(
+            is_draft=False,
+            task__status=MentorTask.Status.SUBMITTED
+        ).select_related('student', 'task', 'task__assigned_mentor').order_by('-submitted_at')
+
     pending_reviews_count = pending_submissions.count()
 
     # Overdue tasks
     today = date.today()
-    overdue_tasks_count = MentorTask.objects.filter(
-        student__in=authorized_students,
-        status__in=[MentorTask.Status.ASSIGNED, MentorTask.Status.RESUBMISSION_REQUESTED],
-        due_date__lt=today
-    ).count()
+    if request.user.is_superuser or request.user.role == 'ADMIN':
+        overdue_tasks_count = MentorTask.objects.filter(
+            status__in=[MentorTask.Status.ASSIGNED, MentorTask.Status.RESUBMISSION_REQUESTED],
+            due_date__lt=today
+        ).count()
+    else:
+        overdue_tasks_count = MentorTask.objects.filter(
+            assigned_mentor=mentor,
+            status__in=[MentorTask.Status.ASSIGNED, MentorTask.Status.RESUBMISSION_REQUESTED],
+            due_date__lt=today
+        ).count()
 
     # Open support alerts
     open_alerts = SupportAlert.objects.filter(
@@ -79,11 +92,16 @@ def dashboard_view(request):
     ).select_related('student').order_by('-created_at')
     open_alerts_count = open_alerts.count()
 
-    # Recent completed reviews
+    # Recent completed reviews by this mentor (or all if admin)
     recent_reviews = TaskSubmission.objects.filter(
-        student__in=authorized_students,
+        reviewed_by=mentor,
         reviewed_at__isnull=False
     ).select_related('student', 'task', 'reviewed_by').order_by('-reviewed_at')[:5]
+
+    if not recent_reviews.exists() and (request.user.is_superuser or request.user.role == 'ADMIN'):
+        recent_reviews = TaskSubmission.objects.filter(
+            reviewed_at__isnull=False
+        ).select_related('student', 'task', 'reviewed_by').order_by('-reviewed_at')[:5]
 
     # Recent student activity
     recent_submissions = pending_submissions[:5]
@@ -256,7 +274,7 @@ def task_assign_view(request):
                 Notification.objects.create(
                     recipient=student.user,
                     notification_type=Notification.NotificationType.TASK_ASSIGNED,
-                    title=f"New Mentor Assignment: {title}",
+                    title=f"New Assignment from {mentor.name}: {title}",
                     message=f"Mentor {mentor.name} assigned you a new development task: '{title}' due on {due_date.strftime('%b %d, %Y')}.",
                     link=f"/student/tasks/{task.id}/"
                 )
@@ -287,12 +305,13 @@ def submissions_list_view(request):
     authorized_students = get_authorized_students(mentor, request.user)
 
     status_filter = request.GET.get('status', 'all')
+    mentor_id = request.GET.get('mentor_id', '')
     q = request.GET.get('q', '').strip()
 
     submissions_qs = TaskSubmission.objects.filter(
         student__in=authorized_students,
         is_draft=False
-    ).select_related('student', 'task', 'reviewed_by').order_by('-submitted_at')
+    ).select_related('student', 'task', 'task__assigned_mentor', 'reviewed_by').order_by('-submitted_at')
 
     if status_filter == 'awaiting':
         submissions_qs = submissions_qs.filter(task__status=MentorTask.Status.SUBMITTED)
@@ -301,21 +320,29 @@ def submissions_list_view(request):
     elif status_filter == 'resubmission':
         submissions_qs = submissions_qs.filter(task__status=MentorTask.Status.RESUBMISSION_REQUESTED)
 
+    if mentor_id and mentor_id.isdigit():
+        submissions_qs = submissions_qs.filter(task__assigned_mentor_id=int(mentor_id))
+
     if q:
         submissions_qs = submissions_qs.filter(
             Q(student__name__icontains=q) |
             Q(student__vrcf_id__icontains=q) |
-            Q(task__title__icontains=q)
+            Q(task__title__icontains=q) |
+            Q(task__assigned_mentor__name__icontains=q)
         )
 
     paginator = Paginator(submissions_qs, 15)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    all_mentors = MentorProfile.objects.filter(is_active=True).order_by('name')
+
     context = {
         'mentor': mentor,
         'page_obj': page_obj,
         'status_filter': status_filter,
+        'selected_mentor_id': int(mentor_id) if mentor_id and mentor_id.isdigit() else None,
+        'all_mentors': all_mentors,
         'q': q,
         'total_count': submissions_qs.count(),
         'active_nav': 'submissions'

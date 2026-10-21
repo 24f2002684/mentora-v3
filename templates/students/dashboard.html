@@ -146,11 +146,14 @@
           {% for task in overdue_tasks %}
             <div class="list-group-item px-0 py-3 border-bottom d-flex justify-content-between align-items-center" style="background: transparent;">
               <div>
-                <div class="d-flex align-items-center gap-2 mb-1">
+                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                   <span class="badge-vrcf badge-vrcf-danger">Overdue</span>
+                  <span class="badge bg-primary text-white" style="font-size: 0.72rem;">
+                    <i class="bi bi-person-fill me-1"></i>From: {{ task.assigned_mentor.name }}
+                  </span>
                   <a href="{% url 'student_task_submit' task.id %}" class="fw-semibold text-decoration-none">{{ task.title }}</a>
                 </div>
-                <small class="text-muted">Due {{ task.due_date|date:"M d, Y" }} &bull; Assigned by {{ task.assigned_mentor.name }}</small>
+                <small class="text-muted"><i class="bi bi-calendar-event me-1"></i>Due {{ task.due_date|date:"M d, Y" }}</small>
               </div>
               <a href="{% url 'student_task_submit' task.id %}" class="btn btn-mentora-outline btn-sm">Submit Work</a>
             </div>
@@ -159,11 +162,14 @@
           {% for task in upcoming_tasks %}
             <div class="list-group-item px-0 py-3 border-bottom d-flex justify-content-between align-items-center" style="background: transparent;">
               <div>
-                <div class="d-flex align-items-center gap-2 mb-1">
+                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                   <span class="badge-vrcf badge-vrcf-warning">Due {{ task.due_date|date:"M d" }}</span>
+                  <span class="badge bg-primary text-white" style="font-size: 0.72rem;">
+                    <i class="bi bi-person-fill me-1"></i>From: {{ task.assigned_mentor.name }}
+                  </span>
                   <a href="{% url 'student_task_submit' task.id %}" class="fw-semibold text-decoration-none">{{ task.title }}</a>
                 </div>
-                <small class="text-muted">Assigned by {{ task.assigned_mentor.name }}</small>
+                <small class="text-muted"><i class="bi bi-person me-1"></i>Assigned by Mentor <strong>{{ task.assigned_mentor.name }}</strong></small>
               </div>
               <a href="{% url 'student_task_submit' task.id %}" class="btn btn-mentora-outline btn-sm">Open</a>
             </div>

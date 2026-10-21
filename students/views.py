@@ -381,19 +381,27 @@ def task_detail_submit_view(request, task_id):
         submission.save()
 
         if not is_draft:
+            is_resubmission = (task.status == MentorTask.Status.RESUBMISSION_REQUESTED)
             task.status = MentorTask.Status.SUBMITTED
             task.save(update_fields=['status'])
 
-            # Notify mentor
-            Notification.objects.create(
-                recipient=task.assigned_mentor.user,
-                notification_type=Notification.NotificationType.SUBMISSION_RECEIVED,
-                title=f"New submission from {student.name}",
-                message=f"{student.name} ({student.vrcf_id}) submitted work for task: '{task.title}'.",
-                link=f"/mentor/submissions/{submission.id}/review/"
-            )
+            # Specifically notify the mentor who assigned this task
+            if task.assigned_mentor and task.assigned_mentor.user:
+                notif_title = f"Revised submission from {student.name}" if is_resubmission else f"New submission from {student.name}"
+                notif_msg = (
+                    f"{student.name} ({student.vrcf_id}) re-submitted revised work for task '{task.title}' assigned by you."
+                    if is_resubmission else
+                    f"{student.name} ({student.vrcf_id}) submitted work for task '{task.title}' assigned by you."
+                )
+                Notification.objects.create(
+                    recipient=task.assigned_mentor.user,
+                    notification_type=Notification.NotificationType.SUBMISSION_RECEIVED,
+                    title=notif_title,
+                    message=notif_msg,
+                    link=f"/mentor/submissions/{submission.id}/review/"
+                )
 
-            messages.success(request, f"Your work for '{task.title}' has been submitted to your mentor for review.")
+            messages.success(request, f"Your work for '{task.title}' has been submitted to Mentor {task.assigned_mentor.name} for review.")
         else:
             messages.info(request, "Your draft response has been saved.")
 

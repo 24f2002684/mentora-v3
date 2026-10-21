@@ -271,30 +271,74 @@ class Command(BaseCommand):
                 }
             )
 
-            # Mentor: mentor@gmail.com / mentor@123
-            mentor_user, _ = User.objects.update_or_create(
-                username='mentor',
-                defaults={
+            # Mentors: Lead Mentor, Manikandan, Avanthikaa, and Ram Kumar
+            mentor_seeds = [
+                {
+                    'username': 'mentor',
                     'email': 'mentor@gmail.com',
-                    'role': User.Role.MENTOR,
                     'first_name': 'Lead',
                     'last_name': 'Mentor',
-                }
-            )
-            mentor_user.set_password('mentor@123')
-            mentor_user.save()
-            mentor_profile, _ = MentorProfile.objects.update_or_create(
-                user=mentor_user,
-                defaults={
                     'name': 'VRCF Lead Mentor',
-                    'email': 'mentor@gmail.com',
                     'designation': 'Senior Leadership & Academic Guide',
-                    'organization': 'Vasumathi Ramaswami Centenary Foundation',
-                    'bio': 'Guiding VRCF scholars towards academic excellence, ethical leadership, and career readiness.',
-                }
-            )
+                    'password': 'mentor@123'
+                },
+                {
+                    'username': 'manikandan',
+                    'email': 'manikandan@vrcf.org',
+                    'first_name': 'Manikandan',
+                    'last_name': '',
+                    'name': 'Manikandan',
+                    'designation': 'Senior VRCF Mentor',
+                    'password': 'mentor@123'
+                },
+                {
+                    'username': 'avanthikaa',
+                    'email': 'avanthikaa@vrcf.org',
+                    'first_name': 'Avanthikaa',
+                    'last_name': '',
+                    'name': 'Avanthikaa',
+                    'designation': 'Senior VRCF Mentor',
+                    'password': 'mentor@123'
+                },
+                {
+                    'username': 'ramkumar',
+                    'email': 'ramkumar@vrcf.org',
+                    'first_name': 'Ram',
+                    'last_name': 'Kumar',
+                    'name': 'Ram Kumar',
+                    'designation': 'Senior VRCF Mentor',
+                    'password': 'mentor@123'
+                },
+            ]
 
-            self.stdout.write(self.style.SUCCESS("Seeded Admin, Trustee, and Mentor foundation accounts."))
+            all_mentors = []
+            for m_data in mentor_seeds:
+                u, _ = User.objects.update_or_create(
+                    username=m_data['username'],
+                    defaults={
+                        'email': m_data['email'],
+                        'role': User.Role.MENTOR,
+                        'first_name': m_data['first_name'],
+                        'last_name': m_data['last_name'],
+                    }
+                )
+                if not u.password:
+                    u.set_password(m_data['password'])
+                    u.save()
+                mp, _ = MentorProfile.objects.update_or_create(
+                    user=u,
+                    defaults={
+                        'name': m_data['name'],
+                        'email': m_data['email'],
+                        'designation': m_data['designation'],
+                        'organization': 'Vasumathi Ramaswami Centenary Foundation',
+                        'bio': 'Guiding VRCF scholars towards academic excellence, ethical leadership, and career readiness.',
+                    }
+                )
+                all_mentors.append(mp)
+
+            mentor_profile = all_mentors[0]
+            self.stdout.write(self.style.SUCCESS(f"Seeded Admin, Trustee, and {len(all_mentors)} Mentor foundation accounts (Lead, Manikandan, Avanthikaa, Ram Kumar)."))
 
             # 4. Import the 43 Students
             imported_count = 0
@@ -379,12 +423,13 @@ class Command(BaseCommand):
                     }
                 )
 
-                # Automatically assign to VRCF Lead Mentor
-                MentorStudentAssignment.objects.get_or_create(
-                    mentor=mentor_profile,
-                    student=student_profile,
-                    defaults={'notes': 'Initial VRCF cohort mentorship assignment.'}
-                )
+                # Automatically assign to all mentors (Lead, Manikandan, Avanthikaa, Ram Kumar)
+                for m in all_mentors:
+                    MentorStudentAssignment.objects.get_or_create(
+                        mentor=m,
+                        student=student_profile,
+                        defaults={'notes': 'Initial VRCF cohort mentorship assignment.'}
+                    )
 
                 # StudentVision
                 is_suhail = (numeric_id == 32)

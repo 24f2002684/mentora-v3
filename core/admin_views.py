@@ -84,13 +84,12 @@ def admin_student_add_view(request):
                     hostel_or_dayscholar=hostel
                 )
 
-                # Assign to lead mentor if exists
-                lead_mentor = MentorProfile.objects.first()
-                if lead_mentor:
-                    MentorStudentAssignment.objects.create(
-                        mentor=lead_mentor,
+                # Assign to all active mentors
+                for m in MentorProfile.objects.filter(is_active=True):
+                    MentorStudentAssignment.objects.get_or_create(
+                        mentor=m,
                         student=student,
-                        is_active=True
+                        defaults={'is_active': True}
                     )
 
                 AuditEvent.objects.create(
@@ -179,6 +178,13 @@ def admin_mentor_add_view(request):
                     organization=organization or 'Vasumathi Ramaswami Centenary Foundation',
                     bio=bio
                 )
+                # Automatically assign all scholars to the new mentor
+                for s in StudentProfile.objects.all():
+                    MentorStudentAssignment.objects.get_or_create(
+                        mentor=mentor,
+                        student=s,
+                        defaults={'is_active': True}
+                    )
                 AuditEvent.objects.create(
                     actor=request.user,
                     event_type='MENTOR_PROVISIONED',
