@@ -115,15 +115,12 @@ def health_check_view(request):
 @require_POST
 def toggle_theme_view(request):
     """
-    Updates user theme preference in database.
+    Deprecated: dark mode removed. Preserved for backwards compatibility.
     """
     if request.user.is_authenticated:
-        theme = request.POST.get('theme', 'light')
-        if theme in ('light', 'dark', 'system'):
-            request.user.theme_preference = theme
-            request.user.save(update_fields=['theme_preference'])
-            return JsonResponse({'status': 'success', 'theme': theme})
-    return JsonResponse({'status': 'ignored'})
+        request.user.theme_preference = 'light'
+        request.user.save(update_fields=['theme_preference'])
+    return JsonResponse({'status': 'ignored', 'theme': 'light'})
 
 
 @require_POST

@@ -63,38 +63,6 @@
 }
 
 /* ==========================================================================
-   Dark Theme Tokens
-   ========================================================================== */
-[data-theme="dark"] {
-  --bg-app: #0b0f19;
-  --bg-surface: #131c2e;
-  --bg-surface-elevated: #1e293b;
-  --bg-surface-alt: #1a2438;
-  --border-color: #243048;
-  --border-color-subtle: #1e293b;
-
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --text-inverted: #0b0f19;
-
-  --primary-accent: #2dd4bf;
-  --primary-hover: #14b8a6;
-  --primary-subtle: rgba(45, 212, 191, 0.12);
-  --primary-border: rgba(45, 212, 191, 0.25);
-
-  --status-success-bg: rgba(16, 185, 129, 0.15);
-  --status-warning-bg: rgba(245, 158, 11, 0.15);
-  --status-danger-bg: rgba(239, 68, 68, 0.15);
-  --status-info-bg: rgba(2, 132, 199, 0.15);
-
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-  --shadow-elevated: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
-}
-
-/* ==========================================================================
    Base Styles & Reset
    ========================================================================== */
 *, *::before, *::after {

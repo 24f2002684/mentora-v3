@@ -13,14 +13,11 @@
   <link rel="icon" type="image/png" href="{% static 'images/Mentora_Logo.png' %}">
   <link rel="apple-touch-icon" href="{% static 'images/Mentora_Logo.png' %}">
 
-  <!-- Immediate Theme Initializer to prevent theme flash -->
   <script>
-    (function() {
-      try {
-        var savedTheme = localStorage.getItem('mentora_theme') || 'light';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-      } catch (e) {}
-    })();
+    try {
+      localStorage.removeItem('mentora_theme');
+      document.cookie = 'mentora_theme=light; path=/; max-age=0;';
+    } catch (e) {}
   </script>
 
   <!-- External Stylesheets (Bootstrap 5.3 & Bootstrap Icons) -->
@@ -59,11 +56,6 @@
   {% else %}
     <!-- Public / Authentication Layout -->
     <div class="min-vh-100 d-flex flex-column justify-content-center align-items-center p-3" style="background-color: var(--bg-app);">
-      <div class="position-absolute top-0 end-0 p-3">
-        <button id="themeToggleBtn" class="btn btn-mentora-subtle btn-sm" aria-label="Toggle theme">
-          <i id="themeToggleIcon" class="bi bi-moon-stars-fill"></i>
-        </button>
-      </div>
       {% include 'components/messages.html' %}
       {% block auth_content %}{% endblock %}
     </div>

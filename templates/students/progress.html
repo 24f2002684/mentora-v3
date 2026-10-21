@@ -145,9 +145,8 @@
       .then(r => r.json())
       .then(data => {
         const ctx = document.getElementById('competencyRadarChart').getContext('2d');
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        const gridColor = isDark ? '#243048' : '#e2e8f0';
-        const textColor = isDark ? '#94a3b8' : '#64748b';
+        const gridColor = '#e2e8f0';
+        const textColor = '#64748b';
 
         new Chart(ctx, {
           type: 'radar',

@@ -6,36 +6,6 @@
 window.Mentora = (function() {
   'use strict';
 
-  // Initialize theme
-  function initTheme() {
-    const savedTheme = localStorage.getItem('mentora_theme') || 'light';
-    applyTheme(savedTheme);
-
-    const toggleBtn = document.getElementById('themeToggleBtn');
-    if (toggleBtn) {
-      toggleBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        applyTheme(newTheme);
-      });
-    }
-  }
-
-  function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('mentora_theme', theme);
-    document.cookie = `mentora_theme=${theme}; path=/; max-age=31536000; SameSite=Lax`;
-
-    const toggleIcon = document.getElementById('themeToggleIcon');
-    if (toggleIcon) {
-      if (theme === 'dark') {
-        toggleIcon.className = 'bi bi-sun-fill text-warning';
-      } else {
-        toggleIcon.className = 'bi bi-moon-stars-fill text-secondary';
-      }
-    }
-  }
 
   // Mobile sidebar drawer
   function initMobileSidebar() {
@@ -214,7 +184,11 @@ window.Mentora = (function() {
 
   // Initialize on DOM ready
   document.addEventListener('DOMContentLoaded', function() {
-    initTheme();
+    try {
+      localStorage.removeItem('mentora_theme');
+      document.cookie = 'mentora_theme=light; path=/; max-age=0;';
+      document.documentElement.setAttribute('data-theme', 'light');
+    } catch (e) {}
     initMobileSidebar();
     initNotifications();
     registerServiceWorker();
@@ -222,7 +196,6 @@ window.Mentora = (function() {
 
   return {
     getCsrfToken: getCsrfToken,
-    showToast: showToast,
-    applyTheme: applyTheme
+    showToast: showToast
   };
 })();
