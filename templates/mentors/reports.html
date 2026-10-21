@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Scholar Growth PDF Reports — Mentora VRCF{% endblock %}
+{% block page_title %}Scholar Growth PDF Reports{% endblock %}
+
+{% block content %}
+<div class="mentora-card mb-4" style="background: linear-gradient(135deg, var(--bg-surface) 0%, var(--primary-subtle) 100%); border-left: 4px solid var(--primary-accent);">
+  <div class="row align-items-center">
+    <div class="col-lg-8">
+      <h2 class="h4 fw-bold mb-1">Scholar Growth & Competency Reports</h2>
+      <p class="text-secondary small mb-0">
+        Generate and download official, print-ready PDF reports compiled using ReportLab. Includes goals, milestones, mentor evaluations, evidence-based strengths, and competency development progressions.
+      </p>
+    </div>
+    <div class="col-lg-4 text-lg-end mt-2 mt-lg-0">
+      <span class="badge-vrcf badge-vrcf-teal">ReportLab PDF Engine Active</span>
+    </div>
+  </div>
+</div>
+
+<!-- Search Bar -->
+<div class="mentora-card mb-4 p-3">
+  <form method="get" class="row g-2 align-items-center">
+    <div class="col-md-9">
+      <div class="input-group">
+        <span class="input-group-text bg-transparent border-end-0 text-muted">
+          <i class="bi bi-search"></i>
+        </span>
+        <input type="text" name="q" class="form-control form-control-mentora border-start-0 ps-0" placeholder="Search scholar by name, VRCF ID, college..." value="{{ q }}">
+      </div>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn btn-mentora w-100 btn-sm">Filter</button>
+      {% if q %}
+        <a href="{% url 'mentor_reports' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-circle"></i></a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Scholars List for Reports -->
+<div class="mentora-card p-0 overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th scope="col" class="ps-4">VRCF ID</th>
+          <th scope="col">Scholar</th>
+          <th scope="col">Cohort</th>
+          <th scope="col">College & Course</th>
+          <th scope="col" class="text-end pe-4">Report Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+          <tr>
+            <td class="ps-4">
+              <span class="badge-vrcf badge-vrcf-teal">{{ s.vrcf_id }}</span>
+            </td>
+            <td>
+              <div class="fw-bold small">{{ s.name }}</div>
+              <small class="text-muted">{{ s.email_self|default:s.phone_self }}</small>
+            </td>
+            <td>
+              <span class="badge-vrcf badge-vrcf-neutral">{{ s.cohort|default:'—' }}</span>
+            </td>
+            <td>
+              <div class="small fw-semibold">{{ s.course_name|default:'—' }}</div>
+              <small class="text-muted">{{ s.college_name_district|truncatechars:35 }}</small>
+            </td>
+            <td class="text-end pe-4">
+              <a href="{% url 'mentor_report_download' s.id %}" class="btn btn-sm btn-mentora">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-4 text-muted">
+              No scholars found matching your search.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

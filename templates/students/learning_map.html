@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Learning Map — Mentora VRCF{% endblock %}
+{% block page_title %}Learning Map & Milestones{% endblock %}
+
+{% block content %}
+<div class="mentora-card mb-4">
+  <div class="mentora-card-header">
+    <div>
+      <h3 class="mentora-card-title mb-0">
+        <i class="bi bi-diagram-3-fill text-primary"></i> Developmental Roadmap
+      </h3>
+      <span class="text-muted small">Sequential progression connecting goals, competencies, and achievements</span>
+    </div>
+    <button type="button" class="btn btn-mentora btn-sm" data-bs-toggle="modal" data-bs-target="#addMilestoneModal">
+      <i class="bi bi-plus-lg"></i> Add Milestone
+    </button>
+  </div>
+
+  {% if milestones %}
+    <div class="position-relative py-3 ps-4" style="border-left: 2px dashed var(--primary-border); margin-left: 12px;">
+      {% for ms in milestones %}
+        <div class="position-relative mb-4">
+          <!-- Step indicator dot -->
+          <div class="position-absolute rounded-circle d-flex align-items-center justify-content-center text-white" 
+               style="left: -33px; top: 0; width: 28px; height: 28px; background-color: {% if ms.status == 'COMPLETED' %}var(--status-success){% else %}var(--primary-accent){% endif %}; font-size: 0.8rem; box-shadow: 0 0 0 4px var(--bg-surface);">
+            {% if ms.status == 'COMPLETED' %}
+              <i class="bi bi-check-lg"></i>
+            {% else %}
+              {{ forloop.counter }}
+            {% endif %}
+          </div>
+
+          <!-- Milestone Content Card -->
+          <div class="p-3 rounded-3 border" style="background-color: var(--bg-surface-alt);">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+              <div>
+                <h4 class="h6 fw-bold mb-1">{{ ms.title }}</h4>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                  {% if ms.goal %}
+                    <span class="badge-vrcf badge-vrcf-neutral small"><i class="bi bi-flag"></i> {{ ms.goal.title|truncatechars:30 }}</span>
+                  {% endif %}
+                  {% if ms.competency %}
+                    <span class="badge-vrcf badge-vrcf-teal small"><i class="bi {{ ms.competency.icon }}"></i> {{ ms.competency.name }}</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="d-flex align-items-center gap-2">
+                {% if ms.target_date %}
+                  <span class="small text-muted"><i class="bi bi-calendar3 me-1"></i>{{ ms.target_date|date:"M d, Y" }}</span>
+                {% endif %}
+                <button class="btn btn-sm {% if ms.status == 'COMPLETED' %}btn-success{% else %}btn-outline-primary{% endif %} py-1 px-2"
+                        onclick="toggleMilestone({{ ms.id }}, this)" style="font-size: 0.78rem;">
+                  {% if ms.status == 'COMPLETED' %}
+                    <i class="bi bi-check-circle-fill me-1"></i>Completed
+                  {% else %}
+                    <i class="bi bi-circle me-1"></i>Mark Done
+                  {% endif %}
+                </button>
+              </div>
+            </div>
+
+            {% if ms.purpose %}
+              <p class="small text-muted mb-2">{{ ms.purpose }}</p>
+            {% endif %}
+
+            {% if ms.completion_requirements %}
+              <div class="small p-2 rounded border-start border-3 border-teal bg-surface" style="background-color: var(--bg-surface); font-size: 0.82rem;">
+                <strong>Requirements:</strong> {{ ms.completion_requirements }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="mentora-empty-state py-5">
+      <i class="bi bi-signpost-split empty-state-icon"></i>
+      <div class="empty-state-title">No Roadmap Milestones Defined</div>
+      <div class="empty-state-text">Create your first milestone to guide your semester progression.</div>
+      <button type="button" class="btn btn-mentora btn-sm" data-bs-toggle="modal" data-bs-target="#addMilestoneModal">
+        Create First Milestone
+      </button>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Add Milestone Modal -->
+<div class="modal fade" id="addMilestoneModal" tabindex="-1" aria-labelledby="addMilestoneLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title h6 fw-bold" id="addMilestoneLabel">Add Learning Milestone</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{% url 'student_learning_map' %}" method="post">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="mentora-form-label">Milestone Title *</label>
+            <input type="text" name="title" class="form-control mentora-form-control" required placeholder="e.g. Complete Analytical Thinking Case Study">
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="mentora-form-label">Linked Goal</label>
+              <select name="goal_id" class="form-select mentora-form-control">
+                <option value="">-- None / General --</option>
+                {% for g in goals %}
+                  <option value="{{ g.id }}">{{ g.title|truncatechars:35 }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="mentora-form-label">Target Competency</label>
+              <select name="competency_id" class="form-select mentora-form-control">
+                <option value="">-- Select Competency --</option>
+                {% for c in competencies %}
+                  <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="mentora-form-label">Target Date</label>
+            <input type="date" name="target_date" class="form-control mentora-form-control">
+          </div>
+
+          <div class="mb-3">
+            <label class="mentora-form-label">Purpose & Objectives</label>
+            <textarea name="purpose" rows="2" class="form-control mentora-form-control" placeholder="Why is this milestone important?"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="mentora-form-label">Completion Requirements</label>
+            <textarea name="completion_requirements" rows="2" class="form-control mentora-form-control" placeholder="What evidence or submission indicates completion?"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-mentora">Save Milestone</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function toggleMilestone(id, btn) {
+    fetch(`/student/milestones/${id}/toggle/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': Mentora.getCsrfToken()
+      }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'success') {
+        if (data.new_status === 'COMPLETED') {
+          btn.className = 'btn btn-sm btn-success py-1 px-2';
+          btn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Completed';
+          Mentora.showToast('Milestone completed! Keep up the momentum.', 'success');
+        } else {
+          btn.className = 'btn btn-sm btn-outline-primary py-1 px-2';
+          btn.innerHTML = '<i class="bi bi-circle me-1"></i>Mark Done';
+          Mentora.showToast('Milestone reopened.', 'info');
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

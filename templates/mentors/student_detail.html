@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ student.name }} ({{ student.vrcf_id }}) — Scholar Profile{% endblock %}
+{% block page_title %}Scholar Profile & Mentorship View{% endblock %}
+
+{% block content %}
+<!-- Top Header with Actions -->
+<div class="mentora-card mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div class="d-flex align-items-center gap-3">
+      {% if student.profile_photo %}
+        <img src="{{ student.profile_photo.url }}" alt="{{ student.name }}" class="rounded-circle" style="width: 64px; height: 64px; object-fit: cover;">
+      {% else %}
+        <div class="stat-icon-wrapper rounded-circle" style="width: 64px; height: 64px; font-size: 1.5rem; background-color: var(--primary-subtle); color: var(--primary-accent);">
+          {{ student.name|slice:":1"|upper }}
+        </div>
+      {% endif %}
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge-vrcf badge-vrcf-teal">{{ student.vrcf_id }}</span>
+          <span class="badge-vrcf badge-vrcf-neutral">{{ student.cohort }}</span>
+        </div>
+        <h2 class="h3 fw-bold mb-1">{{ student.name }}</h2>
+        <div class="text-secondary small">
+          {{ student.course_name }} &bull; {{ student.college_name_district }}
+        </div>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'mentor_task_assign' %}?student_id={{ student.id }}" class="btn btn-mentora btn-sm">
+        <i class="bi bi-plus-circle me-1"></i> Assign Task
+      </a>
+      <a href="{% url 'mentor_report_download' student.id %}" class="btn btn-mentora-outline btn-sm">
+        <i class="bi bi-file-earmark-pdf me-1"></i> Download Growth PDF Report
+      </a>
+      <a href="{% url 'mentor_students' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Roster
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Left Column: Verified Profile, Vision, Support Alerts -->
+  <div class="col-lg-4">
+    <!-- Verified Profile Details -->
+    <div class="mentora-card mb-4">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-person-lines-fill me-2 text-primary"></i>Verified Profile Details
+      </h3>
+      <dl class="row mb-0 small">
+        <dt class="col-5 text-muted">VRCF ID</dt>
+        <dd class="col-7 fw-semibold">{{ student.vrcf_id }}</dd>
+
+        <dt class="col-5 text-muted">Course</dt>
+        <dd class="col-7">{{ student.course_name|default:'—' }}</dd>
+
+        <dt class="col-5 text-muted">Year of Study</dt>
+        <dd class="col-7">{{ student.year_of_study|default:'—' }}</dd>
+
+        <dt class="col-5 text-muted">College</dt>
+        <dd class="col-7">{{ student.college_name_district|default:'—' }}</dd>
+
+        <dt class="col-5 text-muted">Hostel / Day</dt>
+        <dd class="col-7">{{ student.hostel_or_dayscholar|default:'—' }}</dd>
+
+        <dt class="col-5 text-muted">Home District</dt>
+        <dd class="col-7">{{ student.home_district|default:student.district|default:'—' }}</dd>
+
+        <dt class="col-5 text-muted">Phone (Self)</dt>
+        <dd class="col-7">{{ student.phone_self|default:'—' }}</dd>
+
+        <dt class="col-5 text-muted">Phone (Parents)</dt>
+        <dd class="col-7">{{ student.phone_parents|default:'—' }}</dd>
+
+        <dt class="col-5 text-muted">Email (Self)</dt>
+        <dd class="col-7 text-truncate" title="{{ student.email_self }}">{{ student.email_self|default:'—' }}</dd>
+
+        <dt class="col-5 text-muted">Inst. Email</dt>
+        <dd class="col-7 text-truncate" title="{{ student.email_institutional }}">{{ student.email_institutional|default:'—' }}</dd>
+      </dl>
+    </div>
+
+    <!-- Vision & Aspirations -->
+    <div class="mentora-card mb-4">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-compass-fill me-2 text-primary"></i>Vision & Aim
+      </h3>
+      {% if vision and vision.personal_aim %}
+        <div class="p-3 rounded-2 mb-3" style="background-color: var(--primary-subtle); border-left: 3px solid var(--primary-accent);">
+          <div class="small fw-bold text-teal mb-1">Personal Aim</div>
+          <p class="small text-secondary mb-0">{{ vision.personal_aim }}</p>
+        </div>
+        {% if vision.vision_statement %}
+          <div class="mb-2">
+            <span class="small fw-bold text-muted d-block">Vision Statement:</span>
+            <p class="small text-secondary">{{ vision.vision_statement }}</p>
+          </div>
+        {% endif %}
+        {% if vision.career_goals %}
+          <div class="mb-2">
+            <span class="small fw-bold text-muted d-block">Career Goals:</span>
+            <p class="small text-secondary">{{ vision.career_goals }}</p>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="empty-state py-3 text-center">
+          <p class="text-muted small mb-0">Scholar has not yet formulated their vision statement.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Support Alerts -->
+    <div class="mentora-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-bell me-2 text-primary"></i>Support Alerts
+        </h3>
+        <span class="badge bg-secondary">{{ support_alerts.count }}</span>
+      </div>
+      {% for alert in support_alerts %}
+        <div class="p-2 mb-2 rounded border-start border-3 {% if alert.severity == 'HIGH' %}border-danger bg-danger-subtle{% else %}border-warning bg-warning-subtle{% endif %}">
+          <div class="d-flex justify-content-between">
+            <span class="fw-bold small">{{ alert.get_alert_type_display }}</span>
+            <span class="badge bg-secondary" style="font-size: 0.65rem;">{{ alert.get_status_display }}</span>
+          </div>
+          <div class="small text-secondary mt-1">{{ alert.explanation }}</div>
+        </div>
+      {% empty %}
+        <p class="small text-muted mb-0">No open support alerts for this scholar.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Right Column: Goals, Learning Map, Submissions, Assessments -->
+  <div class="col-lg-8">
+    <!-- Active Goals -->
+    <div class="mentora-card mb-4">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-flag-fill me-2 text-primary"></i>Scholar Goals ({{ goals.count }})
+      </h3>
+      <div class="row g-2">
+        {% for g in goals %}
+          <div class="col-md-6">
+            <div class="p-3 rounded-2 border h-100" style="background-color: var(--bg-surface);">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="badge-vrcf {% if g.status == 'COMPLETED' %}badge-vrcf-teal{% else %}badge-vrcf-neutral{% endif %}">{{ g.get_status_display }}</span>
+                <small class="text-muted">{{ g.target_date|default:'Ongoing' }}</small>
+              </div>
+              <div class="fw-bold small mb-1">{{ g.title }}</div>
+              <p class="text-muted small mb-2" style="font-size: 0.75rem;">{{ g.description|truncatewords:15 }}</p>
+              <div class="progress" style="height: 5px;">
+                <div class="progress-bar bg-teal" style="width: {{ g.progress_percentage }}%;"></div>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="col-12 text-center py-3 text-muted small">No goals recorded yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Assigned Tasks & Submissions -->
+    <div class="mentora-card mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-file-earmark-check me-2 text-primary"></i>Mentor Assignments & Submissions
+        </h3>
+        <a href="{% url 'mentor_task_assign' %}?student_id={{ student.id }}" class="small text-muted text-decoration-none">Assign New &rarr;</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+          <thead class="table-light">
+            <tr>
+              <th>Task Title</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Submission Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in assigned_tasks %}
+              <tr>
+                <td class="fw-semibold">{{ t.title }}</td>
+                <td>{{ t.due_date|date:"M d, Y" }}</td>
+                <td>
+                  <span class="badge-vrcf {% if t.status == 'REVIEWED' %}badge-vrcf-teal{% elif t.status == 'SUBMITTED' %}badge-vrcf-warning{% else %}badge-vrcf-neutral{% endif %}">
+                    {{ t.get_status_display }}
+                  </span>
+                </td>
+                <td>
+                  {% if t.submission %}
+                    {{ t.submission.submitted_at|date:"M d, Y" }}
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if t.submission %}
+                    <a href="{% url 'mentor_submission_review' t.submission.id %}" class="btn btn-xs btn-outline-primary py-0 px-2">
+                      Review
+                    </a>
+                  {% else %}
+                    <span class="text-muted">Awaiting</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-3">No tasks assigned yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Competency Assessments History -->
+    <div class="mentora-card mb-4">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-award-fill me-2 text-primary"></i>Official Mentor Competency Assessments
+      </h3>
+      {% if mentor_assessments %}
+        <div class="list-group list-group-flush">
+          {% for a in mentor_assessments %}
+            <div class="list-group-item px-0 py-2 border-bottom" style="background: transparent;">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold small">{{ a.competency.name }}</span>
+                <span class="badge-vrcf badge-vrcf-teal">{{ a.get_level_display }} ({{ a.score|default:'Evaluated' }}/10)</span>
+              </div>
+              <div class="small text-secondary mt-1">Evidence: {{ a.evidence }}</div>
+              {% if a.feedback %}
+                <div class="small text-muted fst-italic mt-1">Feedback: "{{ a.feedback }}"</div>
+              {% endif %}
+              <small class="text-muted" style="font-size: 0.72rem;">Assessed on {{ a.assessed_date|date:"M d, Y" }} by {{ a.assessor.name|default:'Mentor' }}</small>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state py-3 text-center text-muted small">
+          No official mentor competency assessments recorded yet for this scholar.
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- AI Formative Insights (Separated Section) -->
+    <div class="mentora-card" style="border-left: 4px solid var(--primary-accent);">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-cpu me-2 text-primary"></i>AI Formative Developmental Observations
+        </h3>
+        <span class="badge bg-light text-dark border">Provisional Formative Data</span>
+      </div>
+      <p class="small text-muted mb-3">
+        Derived from Socratic exercises and structured challenges. These observations are advisory and distinct from official mentor grades.
+      </p>
+
+      {% if ai_assessments %}
+        <div class="list-group list-group-flush">
+          {% for ai_a in ai_assessments %}
+            <div class="list-group-item px-0 py-2 border-bottom" style="background: transparent;">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold small">{{ ai_a.competency.name }}</span>
+                <span class="badge-vrcf badge-vrcf-neutral">{{ ai_a.get_level_display }} (Score: {{ ai_a.score|default:'N/A' }})</span>
+              </div>
+              <div class="small text-secondary mt-1">{{ ai_a.feedback }}</div>
+              <small class="text-muted" style="font-size: 0.72rem;">Observed: {{ ai_a.assessed_date|date:"M d, Y" }}</small>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center py-2 text-muted small">
+          No AI formative observations recorded yet.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

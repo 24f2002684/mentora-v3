@@ -1,0 +1,145 @@
+{% load static %}
+<aside class="mentora-sidebar">
+  <!-- Brand Header -->
+  <div class="sidebar-brand">
+    <img src="{% static 'images/Mentora_Logo.png' %}" alt="Mentora" class="sidebar-logo-img">
+    <div class="d-flex flex-column">
+      <span class="sidebar-brand-name">Mentora</span>
+      <span class="sidebar-brand-badge">{{ user.get_role_display }}</span>
+    </div>
+  </div>
+
+  <!-- Navigation Links -->
+  <nav class="sidebar-nav">
+    {% if user.is_student %}
+      <div class="nav-section-title">Development</div>
+      <a href="{% url 'student_dashboard' %}" class="sidebar-nav-item {% if active_nav == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-grid-1x2-fill"></i>
+        <span>Overview</span>
+      </a>
+      <a href="{% url 'student_profile' %}" class="sidebar-nav-item {% if active_nav == 'profile' %}active{% endif %}">
+        <i class="bi bi-person-badge-fill"></i>
+        <span>My Profile</span>
+      </a>
+      <a href="{% url 'student_vision' %}" class="sidebar-nav-item {% if active_nav == 'vision' %}active{% endif %}">
+        <i class="bi bi-compass-fill"></i>
+        <span>My Vision & Goals</span>
+      </a>
+      <a href="{% url 'student_learning_map' %}" class="sidebar-nav-item {% if active_nav == 'learning_map' %}active{% endif %}">
+        <i class="bi bi-diagram-3-fill"></i>
+        <span>Learning Map</span>
+      </a>
+      <a href="{% url 'student_tasks' %}" class="sidebar-nav-item {% if active_nav == 'tasks' %}active{% endif %}">
+        <i class="bi bi-check2-circle"></i>
+        <span>Assignments & Tasks</span>
+      </a>
+      <a href="{% url 'student_ai_mentor' %}" class="sidebar-nav-item {% if active_nav == 'ai_mentor' %}active{% endif %}">
+        <i class="bi bi-chat-quote-fill"></i>
+        <span>AI Socratic Mentor</span>
+      </a>
+
+      <div class="nav-section-title">Growth & Insights</div>
+      <a href="{% url 'student_progress' %}" class="sidebar-nav-item {% if active_nav == 'progress' %}active{% endif %}">
+        <i class="bi bi-graph-up-arrow"></i>
+        <span>My Progress</span>
+      </a>
+      <a href="{% url 'student_resources' %}" class="sidebar-nav-item {% if active_nav == 'resources' %}active{% endif %}">
+        <i class="bi bi-journal-bookmark-fill"></i>
+        <span>Resource Library</span>
+      </a>
+      <a href="{% url 'student_settings' %}" class="sidebar-nav-item {% if active_nav == 'settings' %}active{% endif %}">
+        <i class="bi bi-gear-fill"></i>
+        <span>Settings</span>
+      </a>
+
+    {% elif user.is_mentor %}
+      <div class="nav-section-title">Mentorship</div>
+      <a href="{% url 'mentor_dashboard' %}" class="sidebar-nav-item {% if active_nav == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-speedometer2"></i>
+        <span>Overview</span>
+      </a>
+      <a href="{% url 'mentor_students' %}" class="sidebar-nav-item {% if active_nav == 'students' %}active{% endif %}">
+        <i class="bi bi-people-fill"></i>
+        <span>My Scholars</span>
+      </a>
+      <a href="{% url 'mentor_task_assign' %}" class="sidebar-nav-item {% if active_nav == 'assign_task' %}active{% endif %}">
+        <i class="bi bi-plus-circle-fill"></i>
+        <span>Assign Task</span>
+      </a>
+      <a href="{% url 'mentor_submissions' %}" class="sidebar-nav-item {% if active_nav == 'submissions' %}active{% endif %}">
+        <i class="bi bi-file-earmark-check-fill"></i>
+        <span>Review Submissions</span>
+      </a>
+
+      <div class="nav-section-title">Reports & Alerts</div>
+      <a href="{% url 'mentor_reports' %}" class="sidebar-nav-item {% if active_nav == 'reports' %}active{% endif %}">
+        <i class="bi bi-file-pdf-fill"></i>
+        <span>Growth PDF Reports</span>
+      </a>
+      <a href="{% url 'mentor_support_alerts' %}" class="sidebar-nav-item {% if active_nav == 'support_alerts' %}active{% endif %}">
+        <i class="bi bi-bell-fill"></i>
+        <span>Support Alerts</span>
+      </a>
+      <a href="{% url 'admin_student_add' %}" class="sidebar-nav-item {% if active_nav == 'add_student' %}active{% endif %}">
+        <i class="bi bi-person-plus-fill"></i>
+        <span>Provision Scholar</span>
+      </a>
+
+    {% elif user.is_trustee or user.is_admin_role %}
+      <div class="nav-section-title">Foundation Governance</div>
+      <a href="{% url 'trustee_dashboard' %}" class="sidebar-nav-item {% if active_nav == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-building"></i>
+        <span>Program Overview</span>
+      </a>
+      <a href="{% url 'trustee_students' %}" class="sidebar-nav-item {% if active_nav == 'students' %}active{% endif %}">
+        <i class="bi bi-mortarboard-fill"></i>
+        <span>VRCF Scholars</span>
+      </a>
+      <a href="{% url 'trustee_feedback' %}" class="sidebar-nav-item {% if active_nav == 'feedback' %}active{% endif %}">
+        <i class="bi bi-send-fill"></i>
+        <span>Scholar Feedback</span>
+      </a>
+      <a href="{% url 'trustee_mentors' %}" class="sidebar-nav-item {% if active_nav == 'mentors' %}active{% endif %}">
+        <i class="bi bi-person-lines-fill"></i>
+        <span>Mentor Program</span>
+      </a>
+      <a href="{% url 'trustee_analytics' %}" class="sidebar-nav-item {% if active_nav == 'analytics' %}active{% endif %}">
+        <i class="bi bi-pie-chart-fill"></i>
+        <span>Cohort Analytics</span>
+      </a>
+
+      <div class="nav-section-title">Administration</div>
+      <a href="{% url 'admin_student_add' %}" class="sidebar-nav-item {% if active_nav == 'add_student' %}active{% endif %}">
+        <i class="bi bi-person-plus-fill"></i>
+        <span>Add Scholar</span>
+      </a>
+      <a href="{% url 'admin_import_view' %}" class="sidebar-nav-item {% if active_nav == 'import' %}active{% endif %}">
+        <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+        <span>Import / Audit</span>
+      </a>
+    {% endif %}
+  </nav>
+
+  <!-- Sidebar User Profile Footer -->
+  <div class="sidebar-footer">
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2 overflow-hidden">
+        <div class="stat-icon-wrapper" style="width: 34px; height: 34px; font-size: 0.9rem;">
+          {{ user.first_name|default:user.username|slice:":1"|upper }}
+        </div>
+        <div class="d-flex flex-column text-truncate" style="max-width: 130px;">
+          <span class="small fw-semibold text-truncate">{{ user.get_full_name|default:user.username }}</span>
+          <span class="text-muted" style="font-size: 0.72rem;">
+            {% if user_profile.vrcf_id %}{{ user_profile.vrcf_id }}{% else %}{{ user.get_role_display }}{% endif %}
+          </span>
+        </div>
+      </div>
+      <form action="{% url 'auth_logout' %}" method="post" class="m-0">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-link text-muted p-1" title="Sign Out">
+          <i class="bi bi-box-arrow-right fs-5"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+</aside>

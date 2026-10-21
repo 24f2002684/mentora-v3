@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Review Submissions Queue — Mentora VRCF{% endblock %}
+{% block page_title %}Review Submissions Queue{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h2 class="h4 fw-bold mb-1">Scholar Submissions Queue</h2>
+    <p class="text-secondary small mb-0">Review scholar work, grade responses, provide developmental feedback, and assess competencies.</p>
+  </div>
+  <a href="{% url 'mentor_task_assign' %}" class="btn btn-mentora btn-sm">
+    <i class="bi bi-plus-circle me-1"></i> New Assignment
+  </a>
+</div>
+
+<!-- Filter & Search Toolbar -->
+<div class="mentora-card mb-4 p-3">
+  <div class="row g-2 align-items-center">
+    <div class="col-md-7">
+      <div class="d-flex flex-wrap gap-1">
+        <a href="?status=all{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if status_filter == 'all' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
+          All Submissions
+        </a>
+        <a href="?status=awaiting{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if status_filter == 'awaiting' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
+          <i class="bi bi-hourglass-split me-1"></i> Awaiting Review
+        </a>
+        <a href="?status=reviewed{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if status_filter == 'reviewed' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
+          <i class="bi bi-check2-circle me-1"></i> Reviewed
+        </a>
+        <a href="?status=resubmission{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if status_filter == 'resubmission' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
+          <i class="bi bi-arrow-repeat me-1"></i> Resubmission Requested
+        </a>
+      </div>
+    </div>
+    <div class="col-md-5">
+      <form method="get" class="d-flex gap-2">
+        <input type="hidden" name="status" value="{{ status_filter }}">
+        <input type="text" name="q" class="form-control form-control-sm form-control-mentora" placeholder="Search scholar, VRCF ID, task..." value="{{ q }}">
+        <button type="submit" class="btn btn-sm btn-mentora">Search</button>
+        {% if q %}
+          <a href="?status={{ status_filter }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-circle"></i></a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Submissions Table -->
+<div class="mentora-card p-0 overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th scope="col" class="ps-4">Scholar</th>
+          <th scope="col">Assignment Title</th>
+          <th scope="col">Submitted At</th>
+          <th scope="col">Status</th>
+          <th scope="col">Rating</th>
+          <th scope="col" class="text-end pe-4">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sub in page_obj %}
+          <tr>
+            <td class="ps-4">
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge-vrcf badge-vrcf-teal">{{ sub.student.vrcf_id }}</span>
+                <div>
+                  <div class="fw-bold small">{{ sub.student.name }}</div>
+                  <small class="text-muted" style="font-size: 0.72rem;">{{ sub.student.college_name_district|truncatechars:28 }}</small>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="fw-semibold small">{{ sub.task.title }}</div>
+              <small class="text-muted">Due: {{ sub.task.due_date|date:"M d, Y" }}</small>
+            </td>
+            <td>
+              <span class="small text-secondary">{{ sub.submitted_at|date:"M d, Y" }}</span>
+              <small class="text-muted d-block" style="font-size: 0.72rem;">{{ sub.submitted_at|date:"h:i A" }}</small>
+            </td>
+            <td>
+              {% if sub.task.status == 'SUBMITTED' %}
+                <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Awaiting Review</span>
+              {% elif sub.task.status == 'REVIEWED' %}
+                <span class="badge bg-success"><i class="bi bi-check2-circle me-1"></i>Reviewed</span>
+              {% elif sub.task.status == 'RESUBMISSION_REQUESTED' %}
+                <span class="badge bg-danger"><i class="bi bi-arrow-repeat me-1"></i>Revision Requested</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ sub.task.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if sub.mentor_rating %}
+                <span class="badge-vrcf badge-vrcf-teal">{{ sub.mentor_rating }}/5</span>
+              {% else %}
+                <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td class="text-end pe-4">
+              <a href="{% url 'mentor_submission_review' sub.id %}" class="btn btn-sm {% if sub.task.status == 'SUBMITTED' %}btn-mentora{% else %}btn-outline-secondary{% endif %}">
+                {% if sub.task.status == 'SUBMITTED' %}Review & Assess{% else %}View / Edit{% endif %}
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-5">
+              <div class="empty-state">
+                <i class="bi bi-inbox text-muted fs-1 mb-2"></i>
+                <h5 class="fw-semibold">No Submissions Found</h5>
+                <p class="text-muted small">No scholar submissions match your current filter criteria.</p>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-between align-items-center p-3 border-top">
+      <span class="small text-muted">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ total_count }} submissions</span>
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}{% if q %}&q={{ q }}{% endif %}">Previous</a></li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+          {% endif %}
+          <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+          {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}{% if q %}&q={{ q }}{% endif %}">Next</a></li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Next</span></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

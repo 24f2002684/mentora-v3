@@ -1,0 +1,17 @@
+{
+  "name": "Mentora — VRCF Student Development",
+  "short_name": "Mentora",
+  "description": "Student growth, Socratic mentoring, and competency tracking platform for VRCF scholars.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d9488",
+  "theme_color": "#0d9488",
+  "icons": [
+    {
+      "src": "/static/images/Mentora_Logo.png",
+      "sizes": "225x225",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

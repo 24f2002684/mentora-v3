@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ student.name }} ({{ student.vrcf_id }}) — Trustee Scholar Profile{% endblock %}
+{% block page_title %}VRCF Scholar Governance Profile{% endblock %}
+
+{% block content %}
+<div class="mentora-card mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div class="d-flex align-items-center gap-3">
+      {% if student.profile_photo %}
+        <img src="{{ student.profile_photo.url }}" alt="{{ student.name }}" class="rounded-circle" style="width: 64px; height: 64px; object-fit: cover;">
+      {% else %}
+        <div class="stat-icon-wrapper rounded-circle" style="width: 64px; height: 64px; font-size: 1.5rem; background-color: var(--primary-subtle); color: var(--primary-accent);">
+          {{ student.name|slice:":1"|upper }}
+        </div>
+      {% endif %}
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge-vrcf badge-vrcf-teal">{{ student.vrcf_id }}</span>
+          <span class="badge-vrcf badge-vrcf-neutral">{{ student.cohort }}</span>
+        </div>
+        <h2 class="h3 fw-bold mb-1">{{ student.name }}</h2>
+        <div class="text-secondary small">
+          {{ student.course_name }} &bull; {{ student.college_name_district }}
+        </div>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'trustee_feedback' %}?student_id={{ student.id }}" class="btn btn-mentora btn-sm">
+        <i class="bi bi-send me-1"></i> Send Encouragement / Feedback
+      </a>
+      <a href="{% url 'trustee_students' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Roster
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <!-- Verified Profile Data -->
+    <div class="mentora-card mb-4">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-person-lines-fill me-2 text-primary"></i>Profile Information
+      </h3>
+      <dl class="row mb-0 small">
+        <dt class="col-5 text-muted">VRCF ID</dt>
+        <dd class="col-7 fw-semibold">{{ student.vrcf_id }}</dd>
+
+        <dt class="col-5 text-muted">Course</dt>
+        <dd class="col-7">{{ student.course_name|default:'—' }}</dd>
+
+        <dt class="col-5 text-muted">Year</dt>
+        <dd class="col-7">{{ student.year_of_study|default:'—' }}</dd>
+
+        <dt class="col-5 text-muted">College</dt>
+        <dd class="col-7">{{ student.college_name_district|default:'—' }}</dd>
+
+        <dt class="col-5 text-muted">Residence</dt>
+        <dd class="col-7">{{ student.hostel_or_dayscholar|default:'—' }}</dd>
+
+        <dt class="col-5 text-muted">District</dt>
+        <dd class="col-7">{{ student.home_district|default:student.district|default:'—' }}</dd>
+      </dl>
+    </div>
+
+    <!-- Vision Summary -->
+    <div class="mentora-card mb-4">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-compass-fill me-2 text-primary"></i>Aim & Aspirations
+      </h3>
+      {% if vision and vision.personal_aim %}
+        <div class="p-3 rounded-2 mb-2" style="background-color: var(--primary-subtle); border-left: 3px solid var(--primary-accent);">
+          <div class="small fw-bold text-teal mb-1">Personal Aim</div>
+          <p class="small text-secondary mb-0">{{ vision.personal_aim }}</p>
+        </div>
+        {% if vision.career_goals %}
+          <div class="small text-secondary mt-2">
+            <strong>Career Goals:</strong> {{ vision.career_goals }}
+          </div>
+        {% endif %}
+      {% else %}
+        <p class="text-muted small mb-0">No personal aim statement submitted yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Trustee Messages to this Scholar -->
+    <div class="mentora-card">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-send-check me-2 text-primary"></i>Trustee Messages
+      </h3>
+      {% for msg in sent_feedbacks %}
+        <div class="p-2 mb-2 rounded border" style="background-color: var(--bg-surface);">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="fw-bold small">{{ msg.title }}</span>
+            <small class="text-muted" style="font-size: 0.7rem;">{{ msg.created_at|date:"M d" }}</small>
+          </div>
+          <p class="small text-muted mb-0">"{{ msg.message }}"</p>
+        </div>
+      {% empty %}
+        <p class="small text-muted mb-0">No trustee feedback sent to this scholar yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <!-- Goals & Milestones -->
+    <div class="mentora-card mb-4">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-flag-fill me-2 text-primary"></i>Scholar Goals ({{ goals.count }})
+      </h3>
+      <div class="row g-2">
+        {% for g in goals %}
+          <div class="col-md-6">
+            <div class="p-3 rounded-2 border h-100" style="background-color: var(--bg-surface);">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="badge-vrcf {% if g.status == 'COMPLETED' %}badge-vrcf-teal{% else %}badge-vrcf-neutral{% endif %}">{{ g.get_status_display }}</span>
+                <small class="text-muted">{{ g.target_date|default:'Ongoing' }}</small>
+              </div>
+              <div class="fw-bold small mb-1">{{ g.title }}</div>
+              <div class="progress" style="height: 5px;">
+                <div class="progress-bar bg-teal" style="width: {{ g.progress_percentage }}%;"></div>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="col-12 text-center py-3 text-muted small">No goals recorded yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Mentor Assignments Progress -->
+    <div class="mentora-card mb-4">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-check2-circle me-2 text-primary"></i>Mentorship Assignments History
+      </h3>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+          <thead class="table-light">
+            <tr>
+              <th>Task</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Assigned Mentor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in assigned_tasks %}
+              <tr>
+                <td class="fw-semibold">{{ t.title }}</td>
+                <td>{{ t.due_date|date:"M d, Y" }}</td>
+                <td>
+                  <span class="badge-vrcf {% if t.status == 'REVIEWED' %}badge-vrcf-teal{% elif t.status == 'SUBMITTED' %}badge-vrcf-warning{% else %}badge-vrcf-neutral{% endif %}">
+                    {{ t.get_status_display }}
+                  </span>
+                </td>
+                <td>{{ t.assigned_mentor.name }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-3">No assignments recorded.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Official Mentor Assessments -->
+    <div class="mentora-card">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-award-fill me-2 text-primary"></i>Published Mentor Evaluations
+      </h3>
+      {% if mentor_assessments %}
+        <div class="list-group list-group-flush">
+          {% for a in mentor_assessments %}
+            <div class="list-group-item px-0 py-2 border-bottom" style="background: transparent;">
+              <div class="d-flex justify-content-between">
+                <span class="fw-bold small">{{ a.competency.name }}</span>
+                <span class="badge-vrcf badge-vrcf-teal">{{ a.get_level_display }} ({{ a.score|default:'Evaluated' }}/10)</span>
+              </div>
+              <div class="small text-muted mt-1">{{ a.evidence }}</div>
+              {% if a.feedback %}
+                <div class="small text-secondary fst-italic">"{{ a.feedback }}"</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted small mb-0">No published mentor competency assessments on record yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

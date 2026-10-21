@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trustee Scholar Feedback — Mentora VRCF{% endblock %}
+{% block page_title %}Send Scholar Feedback & Guidance{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Left Column: Send Feedback Form -->
+  <div class="col-lg-6">
+    <div class="mentora-card">
+      <h2 class="h4 fw-bold mb-1">Send Scholar Guidance</h2>
+      <p class="text-secondary small mb-4">
+        Deliver constructive encouragement, advice, and recognition directly to a VRCF scholar. The message will appear in their dashboard notifications and vision portal.
+      </p>
+
+      <form method="post" action="{% url 'trustee_feedback' %}">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label for="id_student" class="form-label fw-bold small">Select Scholar *</label>
+          <select name="student_id" id="id_student" class="form-select form-control-mentora" required>
+            <option value="">Choose a scholar...</option>
+            {% for s in students %}
+              <option value="{{ s.id }}" {% if preselected_student and preselected_student.id == s.id %}selected{% endif %}>
+                {{ s.vrcf_id }} - {{ s.name }} ({{ s.cohort }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label for="id_title" class="form-label fw-bold small">Subject / Title *</label>
+          <input type="text" name="title" id="id_title" class="form-control form-control-mentora" placeholder="e.g., Commendation on Analytical Thinking & Academic Progress" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="id_message" class="form-label fw-bold small">Guidance Message *</label>
+          <textarea name="message" id="id_message" rows="5" class="form-control form-control-mentora" placeholder="Write your words of guidance, constructive reflection, or recognition..." required></textarea>
+        </div>
+
+        {% if student_goals %}
+          <div class="mb-3">
+            <label for="id_linked_goal" class="form-label fw-bold small">Link to Specific Goal (Optional)</label>
+            <select name="linked_goal_id" id="id_linked_goal" class="form-select form-control-mentora">
+              <option value="">No specific goal linked</option>
+              {% for g in student_goals %}
+                <option value="{{ g.id }}">{{ g.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'trustee_dashboard' %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+          <button type="submit" class="btn btn-mentora btn-sm px-4">
+            <i class="bi bi-send me-1"></i> Send Guidance Message
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right Column: Recent Sent Messages -->
+  <div class="col-lg-6">
+    <div class="mentora-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-clock-history me-2 text-primary"></i>Sent Guidance History
+        </h3>
+        <span class="badge bg-secondary">{{ all_feedbacks.count }}</span>
+      </div>
+
+      {% if all_feedbacks %}
+        <div class="list-group list-group-flush">
+          {% for f in all_feedbacks %}
+            <div class="list-group-item px-0 py-3 border-bottom" style="background: transparent;">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge-vrcf badge-vrcf-teal">{{ f.student.vrcf_id }}</span>
+                  <span class="fw-bold small">{{ f.student.name }}</span>
+                </div>
+                <small class="text-muted">{{ f.created_at|date:"M d, Y" }}</small>
+              </div>
+              <div class="small fw-semibold text-dark">{{ f.title }}</div>
+              <p class="small text-secondary mb-1">"{{ f.message }}"</p>
+              <div class="d-flex justify-content-between align-items-center mt-1">
+                <small class="text-muted" style="font-size: 0.72rem;">Sent by {{ f.trustee.name }}</small>
+                {% if f.is_read %}
+                  <span class="badge bg-success" style="font-size: 0.65rem;"><i class="bi bi-check2-all me-1"></i>Read by Scholar</span>
+                {% else %}
+                  <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">Delivered</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state py-5 text-center">
+          <i class="bi bi-send text-muted fs-1 mb-2"></i>
+          <p class="text-muted small mb-0">No guidance messages sent yet. Use the form to send words of encouragement to scholars.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

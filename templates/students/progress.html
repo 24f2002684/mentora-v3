@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Progress & Competencies — Mentora VRCF{% endblock %}
+{% block page_title %}Growth & Competency Progress{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper" style="background-color: var(--status-success-bg); color: var(--status-success);">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ completed_tasks }}</div>
+        <div class="stat-label">Submissions Completed</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper">
+        <i class="bi bi-flag-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ completed_milestones }}</div>
+        <div class="stat-label">Milestones Achieved</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper" style="background-color: var(--status-warning-bg); color: var(--status-warning);">
+        <i class="bi bi-trophy-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ completed_goals }}</div>
+        <div class="stat-label">Goals Accomplished</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Competency Radar Chart -->
+  <div class="col-lg-6">
+    <div class="mentora-card h-100">
+      <div class="mentora-card-header">
+        <div>
+          <h3 class="mentora-card-title mb-0">
+            <i class="bi bi-radar text-primary"></i> 10 Core Competencies
+          </h3>
+          <span class="text-muted small">Evidence-derived developmental assessment profile</span>
+        </div>
+      </div>
+      <div class="p-2" style="height: 380px; position: relative;">
+        <canvas id="competencyRadarChart"></canvas>
+      </div>
+      <div class="d-flex justify-content-center gap-4 mt-2 small text-muted">
+        <span><i class="bi bi-circle-fill text-teal me-1" style="color: #0d9488;"></i> Official Mentor Review</span>
+        <span><i class="bi bi-circle-fill text-secondary me-1" style="color: #64748b;"></i> AI Formative Observations</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Competency List -->
+  <div class="col-lg-6">
+    <div class="mentora-card h-100">
+      <div class="mentora-card-header">
+        <h3 class="mentora-card-title">
+          <i class="bi bi-list-stars text-primary"></i> Competency Breakdown
+        </h3>
+      </div>
+      <div class="d-flex flex-column gap-2" style="max-height: 420px; overflow-y: auto;">
+        {% for item in comp_progress %}
+          <div class="p-3 rounded border" style="background-color: var(--bg-surface-alt);">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-bold small d-flex align-items-center gap-2">
+                <i class="bi {{ item.competency.icon }} text-primary"></i> {{ item.competency.name }}
+              </span>
+              <span class="badge-vrcf {% if item.latest_mentor %}badge-vrcf-teal{% elif item.latest_ai %}badge-vrcf-neutral{% else %}badge-vrcf-neutral text-muted{% endif %}">
+                {{ item.level_label }}
+              </span>
+            </div>
+            <p class="text-muted mb-0" style="font-size: 0.78rem;">{{ item.competency.description }}</p>
+            {% if item.latest_mentor and item.latest_mentor.feedback %}
+              <div class="mt-2 p-2 rounded bg-surface border small" style="background-color: var(--bg-surface); font-size: 0.76rem;">
+                <strong>Mentor Evidence:</strong> {{ item.latest_mentor.feedback }}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Evaluation History -->
+<div class="mentora-card">
+  <div class="mentora-card-header">
+    <h3 class="mentora-card-title">
+      <i class="bi bi-clock-history text-primary"></i> Assessment History Log
+    </h3>
+  </div>
+  {% if mentor_assessments %}
+    <div class="mentora-table-container">
+      <table class="mentora-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Competency</th>
+            <th>Level</th>
+            <th>Assessor</th>
+            <th>Evidence / Feedback</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in mentor_assessments %}
+            <tr>
+              <td>{{ a.assessed_date|date:"M d, Y" }}</td>
+              <td><strong>{{ a.competency.name }}</strong></td>
+              <td><span class="badge-vrcf badge-vrcf-teal">{{ a.get_level_display }}</span></td>
+              <td>{{ a.assessor.name|default:"VRCF Mentor" }}</td>
+              <td class="text-secondary small">{{ a.feedback|default:"Demonstrated competency in structured assignment." }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="mentora-empty-state py-4">
+      <i class="bi bi-clipboard-data empty-state-icon"></i>
+      <div class="empty-state-title">No Formal Evaluations Yet</div>
+      <div class="empty-state-text">Your mentor will log evaluations as assignments are reviewed. Unassessed competencies are preserved without zero-score bias.</div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    fetch('/student/progress/api/')
+      .then(r => r.json())
+      .then(data => {
+        const ctx = document.getElementById('competencyRadarChart').getContext('2d');
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const gridColor = isDark ? '#243048' : '#e2e8f0';
+        const textColor = isDark ? '#94a3b8' : '#64748b';
+
+        new Chart(ctx, {
+          type: 'radar',
+          data: {
+            labels: data.labels,
+            datasets: [
+              {
+                label: 'Mentor Review',
+                data: data.mentorScores,
+                backgroundColor: 'rgba(13, 148, 136, 0.25)',
+                borderColor: '#0d9488',
+                borderWidth: 2,
+                pointBackgroundColor: '#0d9488',
+                pointRadius: 3
+              },
+              {
+                label: 'AI Formative',
+                data: data.aiScores,
+                backgroundColor: 'rgba(100, 116, 139, 0.15)',
+                borderColor: '#64748b',
+                borderWidth: 1.5,
+                borderDash: [4, 4],
+                pointBackgroundColor: '#64748b',
+                pointRadius: 2
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              r: {
+                min: 0,
+                max: 10,
+                ticks: {
+                  stepSize: 2,
+                  display: false
+                },
+                grid: {
+                  color: gridColor
+                },
+                angleLines: {
+                  color: gridColor
+                },
+                pointLabels: {
+                  color: textColor,
+                  font: {
+                    size: 10.5,
+                    weight: '500'
+                  }
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                display: false
+              }
+            }
+          }
+        });
+      });
+  });
+</script>
+{% endblock %}

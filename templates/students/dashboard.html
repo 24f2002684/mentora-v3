@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Scholar Dashboard — Mentora VRCF{% endblock %}
+{% block page_title %}Scholar Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome Banner -->
+<div class="mentora-card mb-4" style="background: linear-gradient(135deg, var(--bg-surface) 0%, var(--primary-subtle) 100%); border-left: 4px solid var(--primary-accent);">
+  <div class="row align-items-center">
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge-vrcf badge-vrcf-teal">{{ student.cohort }}</span>
+        <span class="badge-vrcf badge-vrcf-neutral">{{ student.vrcf_id }}</span>
+      </div>
+      <h2 class="h3 fw-bold mb-2">Welcome back, {{ student.name }}!</h2>
+      <p class="text-secondary mb-3">
+        {% if vision.personal_aim %}
+          <strong>Current Aim:</strong> {{ vision.personal_aim }}
+        {% else %}
+          Empowering your academic growth and critical reasoning through the VRCF Centenary Scholarship program.
+        {% endif %}
+      </p>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'student_ai_mentor' %}" class="btn btn-mentora btn-sm">
+          <i class="bi bi-chat-quote-fill"></i> Socratic AI Mentor
+        </a>
+        <a href="{% url 'student_tasks' %}" class="btn btn-mentora-outline btn-sm">
+          <i class="bi bi-check2-circle"></i> View Assignments ({{ pending_tasks_count }})
+        </a>
+      </div>
+    </div>
+    <div class="col-lg-4 mt-3 mt-lg-0 text-lg-end">
+      <div class="d-inline-block text-start p-3 rounded-3" style="background-color: var(--bg-surface); border: 1px solid var(--border-color);">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="small text-muted fw-semibold">Profile Completion</span>
+          <span class="small fw-bold text-primary">{{ profile_completion_pct }}%</span>
+        </div>
+        <div class="progress" style="height: 6px; width: 180px;">
+          <div class="progress-bar bg-teal" role="progressbar" style="width: {{ profile_completion_pct }}%; background-color: var(--primary-accent);" aria-valuenow="{{ profile_completion_pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <small class="text-muted d-block mt-2" style="font-size: 0.72rem;">{{ student.college_name_district }}</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stat Summary Row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper">
+        <i class="bi bi-fire"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ streak_days }}</div>
+        <div class="stat-label">Learning Streak (Days)</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper" style="background-color: var(--status-warning-bg); color: var(--status-warning);">
+        <i class="bi bi-hourglass-split"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ pending_tasks_count }}</div>
+        <div class="stat-label">Pending Tasks</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper" style="background-color: var(--status-success-bg); color: var(--status-success);">
+        <i class="bi bi-check2-all"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ completed_milestones_count }}</div>
+        <div class="stat-label">Milestones Achieved</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper">
+        <i class="bi bi-star-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ assessed_competencies_count }}/10</div>
+        <div class="stat-label">Competencies Assessed</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Workspace Layout -->
+<div class="row g-4">
+  <!-- Left Column: Active Milestone & Tasks -->
+  <div class="col-lg-8">
+    <!-- Active Learning Milestone -->
+    <div class="mentora-card mb-4">
+      <div class="mentora-card-header">
+        <h3 class="mentora-card-title">
+          <i class="bi bi-signpost-2-fill text-primary"></i> Next Learning Milestone
+        </h3>
+        <a href="{% url 'student_learning_map' %}" class="small text-decoration-none">Full Learning Map &rarr;</a>
+      </div>
+      {% if next_milestone %}
+        <div class="p-3 rounded-3" style="background-color: var(--bg-surface-alt); border-left: 3px solid var(--primary-accent);">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h4 class="h6 fw-bold mb-0">{{ next_milestone.title }}</h4>
+            {% if next_milestone.target_date %}
+              <span class="badge-vrcf badge-vrcf-neutral small">Target: {{ next_milestone.target_date|date:"M d, Y" }}</span>
+            {% endif %}
+          </div>
+          <p class="small text-muted mb-2">{{ next_milestone.purpose|default:"Advance critical reasoning and domain problem solving." }}</p>
+          {% if next_milestone.competency %}
+            <span class="badge-vrcf badge-vrcf-teal small me-2"><i class="bi {{ next_milestone.competency.icon }}"></i> {{ next_milestone.competency.name }}</span>
+          {% endif %}
+          <div class="mt-3">
+            <a href="{% url 'student_ai_mentor' %}" class="btn btn-mentora btn-sm">
+              <i class="bi bi-arrow-right-circle"></i> Continue Learning
+            </a>
+          </div>
+        </div>
+      {% else %}
+        <div class="mentora-empty-state py-4">
+          <i class="bi bi-flag empty-state-icon"></i>
+          <div class="empty-state-title">No Active Milestone</div>
+          <div class="empty-state-text">You're caught up! Add a new learning milestone to map your goals.</div>
+          <a href="{% url 'student_learning_map' %}" class="btn btn-mentora-outline btn-sm">Explore Learning Map</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Pending Assignments -->
+    <div class="mentora-card mb-4">
+      <div class="mentora-card-header">
+        <h3 class="mentora-card-title">
+          <i class="bi bi-journal-check text-primary"></i> Mentor Assignments
+        </h3>
+        <a href="{% url 'student_tasks' %}" class="small text-decoration-none">All Tasks &rarr;</a>
+      </div>
+      {% if upcoming_tasks or overdue_tasks %}
+        <div class="list-group list-group-flush">
+          {% for task in overdue_tasks %}
+            <div class="list-group-item px-0 py-3 border-bottom d-flex justify-content-between align-items-center" style="background: transparent;">
+              <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <span class="badge-vrcf badge-vrcf-danger">Overdue</span>
+                  <a href="{% url 'student_task_submit' task.id %}" class="fw-semibold text-decoration-none">{{ task.title }}</a>
+                </div>
+                <small class="text-muted">Due {{ task.due_date|date:"M d, Y" }} &bull; Assigned by {{ task.assigned_mentor.name }}</small>
+              </div>
+              <a href="{% url 'student_task_submit' task.id %}" class="btn btn-mentora-outline btn-sm">Submit Work</a>
+            </div>
+          {% endfor %}
+
+          {% for task in upcoming_tasks %}
+            <div class="list-group-item px-0 py-3 border-bottom d-flex justify-content-between align-items-center" style="background: transparent;">
+              <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <span class="badge-vrcf badge-vrcf-warning">Due {{ task.due_date|date:"M d" }}</span>
+                  <a href="{% url 'student_task_submit' task.id %}" class="fw-semibold text-decoration-none">{{ task.title }}</a>
+                </div>
+                <small class="text-muted">Assigned by {{ task.assigned_mentor.name }}</small>
+              </div>
+              <a href="{% url 'student_task_submit' task.id %}" class="btn btn-mentora-outline btn-sm">Open</a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="mentora-empty-state py-4">
+          <i class="bi bi-clipboard-check empty-state-icon"></i>
+          <div class="empty-state-title">No Pending Assignments</div>
+          <div class="empty-state-text">You have submitted all mentor tasks. Great job staying on track!</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Column: Socratic AI Card & Recent Feedback -->
+  <div class="col-lg-4">
+    <!-- Socratic AI Card -->
+    <div class="mentora-card mb-4" style="border-top: 4px solid var(--primary-accent);">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="chat-avatar ai-avatar">
+          <i class="bi bi-stars"></i>
+        </div>
+        <div>
+          <h4 class="h6 fw-bold mb-0">Socratic AI Mentor</h4>
+          <span class="text-muted" style="font-size: 0.72rem;">Powered by Gemini</span>
+        </div>
+      </div>
+      <p class="small text-muted mb-3">
+        Engage with your dedicated learning coach to explore difficult concepts, examine logic, and practice critical thinking.
+      </p>
+      <div class="d-flex flex-column gap-2 mb-3">
+        <a href="{% url 'student_ai_mentor' %}?prompt=Help me break down my semester academic goal into weekly milestones" class="btn btn-mentora-subtle btn-sm text-start">
+          <i class="bi bi-lightbulb me-1"></i> "Break down my academic goals"
+        </a>
+        <a href="{% url 'student_ai_mentor' %}?prompt=Challenge my assumptions on career readiness in my degree" class="btn btn-mentora-subtle btn-sm text-start">
+          <i class="bi bi-puzzle me-1"></i> "Challenge my reasoning on career prep"
+        </a>
+      </div>
+      <a href="{% url 'student_ai_mentor' %}" class="btn btn-mentora btn-sm w-100 justify-content-center">
+        Launch Mentoring Session
+      </a>
+    </div>
+
+    <!-- Recent Mentor Feedback -->
+    <div class="mentora-card mb-4">
+      <div class="mentora-card-header">
+        <h3 class="mentora-card-title h6 mb-0">
+          <i class="bi bi-chat-left-heart text-primary"></i> Mentor Reviews
+        </h3>
+      </div>
+      {% if recent_reviews %}
+        <div class="list-group list-group-flush">
+          {% for rev in recent_reviews %}
+            <div class="list-group-item px-0 py-3 border-bottom" style="background: transparent;">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-semibold small text-truncate" style="max-width: 180px;">{{ rev.task.title }}</span>
+                {% if rev.mentor_rating %}
+                  <span class="badge-vrcf badge-vrcf-teal">{{ rev.mentor_rating }}/5 &starf;</span>
+                {% endif %}
+              </div>
+              <p class="small text-muted mb-1">{{ rev.mentor_feedback|truncatewords:18 }}</p>
+              <small class="text-muted" style="font-size: 0.72rem;">Reviewed by {{ rev.reviewed_by.name }} &bull; {{ rev.reviewed_at|date:"M d, Y" }}</small>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center py-4 text-muted small">
+          <i class="bi bi-chat-dots fs-3 d-block mb-1"></i>
+          Mentor feedback will appear here after reviews are published.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

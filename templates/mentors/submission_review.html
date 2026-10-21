@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Review Submission: {{ task.title }} — Mentora VRCF{% endblock %}
+{% block page_title %}Evaluate Scholar Submission{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <span class="badge-vrcf badge-vrcf-teal">{{ student.vrcf_id }}</span>
+      <span class="fw-bold">{{ student.name }}</span>
+      <span class="text-muted small">&bull; {{ student.college_name_district }}</span>
+    </div>
+    <h2 class="h4 fw-bold mb-0">{{ task.title }}</h2>
+  </div>
+  <a href="{% url 'mentor_submissions' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back to Queue
+  </a>
+</div>
+
+<div class="row g-4">
+  <!-- Left Column: Task & Scholar Submission Content -->
+  <div class="col-lg-6">
+    <!-- Task Requirements Reference -->
+    <div class="mentora-card mb-4" style="background-color: var(--primary-subtle); border-left: 4px solid var(--primary-accent);">
+      <h3 class="card-title text-teal mb-2">
+        <i class="bi bi-info-circle me-1"></i>Task Requirements & Rubric
+      </h3>
+      <div class="small text-secondary mb-2">
+        <strong>Instructions:</strong>
+        <p class="mb-2">{{ task.instructions|linebreaksbr }}</p>
+      </div>
+      {% if task.deliverables %}
+        <div class="small text-secondary mb-2">
+          <strong>Expected Deliverables:</strong> {{ task.deliverables }}
+        </div>
+      {% endif %}
+      {% if task.evaluation_criteria %}
+        <div class="small text-secondary">
+          <strong>Evaluation Criteria:</strong> {{ task.evaluation_criteria }}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Scholar Submitted Work -->
+    <div class="mentora-card mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-file-earmark-text me-2 text-primary"></i>Submitted Work
+        </h3>
+        <small class="text-muted">{{ submission.submitted_at|date:"M d, Y, h:i A" }}</small>
+      </div>
+
+      <div class="p-3 rounded-2 border mb-3" style="background-color: var(--bg-surface); min-height: 180px; white-space: pre-wrap; font-size: 0.92rem;">
+        {{ submission.submission_text }}
+      </div>
+
+      {% if submission.attachment %}
+        <div class="p-3 rounded-2 border mb-3 d-flex align-items-center justify-content-between" style="background-color: var(--bg-surface);">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-paperclip fs-4 text-primary"></i>
+            <div>
+              <div class="small fw-bold">Scholar Attachment</div>
+              <small class="text-muted">{{ submission.attachment.name }}</small>
+            </div>
+          </div>
+          <a href="{{ submission.attachment.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-download me-1"></i> View / Download
+          </a>
+        </div>
+      {% endif %}
+
+      {% if submission.student_remarks %}
+        <div class="mb-3">
+          <span class="small fw-bold text-muted d-block mb-1">Scholar Remarks:</span>
+          <p class="small text-secondary p-2 rounded border" style="background-color: var(--bg-surface);">
+            {{ submission.student_remarks }}
+          </p>
+        </div>
+      {% endif %}
+
+      {% if submission.student_reflection %}
+        <div>
+          <span class="small fw-bold text-muted d-block mb-1">Scholar Self-Reflection:</span>
+          <p class="small text-secondary p-2 rounded border" style="background-color: var(--bg-surface);">
+            {{ submission.student_reflection }}
+          </p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Column: Evaluation & Feedback Form -->
+  <div class="col-lg-6">
+    <div class="mentora-card">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-pencil-square me-2 text-primary"></i>Official Mentor Review & Assessment
+      </h3>
+      <p class="small text-muted mb-4">Provide constructive, growth-oriented feedback and score the relevant core competencies.</p>
+
+      <form method="post" action="{% url 'mentor_submission_review' submission.id %}">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label for="id_mentor_rating" class="form-label fw-bold small">Overall Rating / Grade (1 - 5) *</label>
+          <select name="mentor_rating" id="id_mentor_rating" class="form-select form-control-mentora" required>
+            <option value="">Select Rating...</option>
+            <option value="5" {% if submission.mentor_rating == 5 %}selected{% endif %}>5 - Exceptional / Exceeds Expectations</option>
+            <option value="4" {% if submission.mentor_rating == 4 %}selected{% endif %}>4 - Proficient / High Quality</option>
+            <option value="3" {% if submission.mentor_rating == 3 %}selected{% endif %}>3 - Developing / Meets Requirements</option>
+            <option value="2" {% if submission.mentor_rating == 2 %}selected{% endif %}>2 - Emerging / Needs Substantial Work</option>
+            <option value="1" {% if submission.mentor_rating == 1 %}selected{% endif %}>1 - Foundation / Incomplete</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label for="id_mentor_feedback" class="form-label fw-bold small">Written Mentor Feedback *</label>
+          <textarea name="mentor_feedback" id="id_mentor_feedback" rows="4" class="form-control form-control-mentora" placeholder="Write substantive, encouraging, and critical observations..." required>{{ submission.mentor_feedback }}</textarea>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label for="id_strengths" class="form-label fw-bold small">Key Strengths Demonstrated</label>
+            <textarea name="strengths" id="id_strengths" rows="3" class="form-control form-control-mentora" placeholder="Strong reasoning, clear organization, thoughtful analysis...">{{ submission.strengths }}</textarea>
+          </div>
+          <div class="col-md-6">
+            <label for="id_areas_for_improvement" class="form-label fw-bold small">Areas for Growth</label>
+            <textarea name="areas_for_improvement" id="id_areas_for_improvement" rows="3" class="form-control form-control-mentora" placeholder="Evidence backing, deeper questioning...">{{ submission.areas_for_improvement }}</textarea>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="id_next_action" class="form-label fw-bold small">Next Recommended Action</label>
+          <input type="text" name="next_recommended_action" id="id_next_action" class="form-control form-control-mentora" placeholder="e.g., Read chapter 4 of recommended text or prepare revised summary..." value="{{ submission.next_recommended_action }}">
+        </div>
+
+        <!-- Competency Assessments Evaluation -->
+        <div class="mb-4 p-3 rounded-2 border" style="background-color: var(--bg-surface);">
+          <label class="form-label fw-bold small text-teal mb-2">
+            <i class="bi bi-award me-1"></i>Score Core Competencies
+          </label>
+          <p class="text-muted small mb-3">Check competencies demonstrated in this submission to log official mentor evaluations:</p>
+
+          {% for comp in all_competencies %}
+            <div class="border-bottom pb-2 mb-2">
+              <div class="form-check small mb-1">
+                <input class="form-check-input" type="checkbox" name="evaluated_competencies" value="{{ comp.id }}" id="eval_comp_{{ comp.id }}" {% if comp in task_competencies %}checked{% endif %} onchange="toggleCompDetails('{{ comp.id }}')">
+                <label class="form-check-label fw-semibold" for="eval_comp_{{ comp.id }}">
+                  {{ comp.name }}
+                </label>
+              </div>
+              <div id="comp_fields_{{ comp.id }}" class="ps-4 mt-2" style="display: {% if comp in task_competencies %}block{% else %}none{% endif %};">
+                <div class="row g-2">
+                  <div class="col-6">
+                    <select name="comp_level_{{ comp.id }}" class="form-select form-select-sm form-control-mentora">
+                      <option value="FOUNDATION">Foundation</option>
+                      <option value="DEVELOPING" selected>Developing</option>
+                      <option value="PROFICIENT">Proficient</option>
+                      <option value="ADVANCED">Advanced</option>
+                    </select>
+                  </div>
+                  <div class="col-6">
+                    <input type="number" step="0.5" min="1.0" max="10.0" name="comp_score_{{ comp.id }}" class="form-control form-control-sm form-control-mentora" placeholder="Score (1-10)">
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Resubmission Request Checkbox -->
+        <div class="form-check mb-4 p-3 rounded-2" style="background-color: var(--status-warning-bg); border: 1px solid rgba(245, 158, 11, 0.2);">
+          <input class="form-check-input ms-0 me-2" type="checkbox" name="request_resubmission" value="1" id="id_request_resubmission">
+          <label class="form-check-label small fw-semibold text-warning-emphasis" for="id_request_resubmission">
+            Request Resubmission: Check if the scholar needs to revise and resubmit their work based on the feedback above.
+          </label>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'mentor_submissions' %}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-mentora px-4">
+            <i class="bi bi-check2-circle me-1"></i> Publish Review & Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleCompDetails(compId) {
+  const checkbox = document.getElementById('eval_comp_' + compId);
+  const fields = document.getElementById('comp_fields_' + compId);
+  fields.style.display = checkbox.checked ? 'block' : 'none';
+}
+</script>
+{% endblock %}

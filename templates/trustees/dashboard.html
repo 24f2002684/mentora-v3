@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trustee Governance Dashboard — Mentora VRCF{% endblock %}
+{% block page_title %}Trustee Governance Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome Banner -->
+<div class="mentora-card mb-4" style="background: linear-gradient(135deg, var(--bg-surface) 0%, var(--primary-subtle) 100%); border-left: 4px solid var(--primary-accent);">
+  <div class="row align-items-center">
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge-vrcf badge-vrcf-teal">Foundation Governance</span>
+        <span class="badge-vrcf badge-vrcf-neutral">{{ trustee.designation }}</span>
+      </div>
+      <h2 class="h3 fw-bold mb-2">Welcome, {{ trustee.name }}</h2>
+      <p class="text-secondary mb-3">
+        Executive overview of VRCF centenary scholar development, mentorship throughput, and competency outcomes.
+      </p>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'trustee_analytics' %}" class="btn btn-mentora btn-sm">
+          <i class="bi bi-pie-chart-fill me-1"></i> Program Analytics
+        </a>
+        <a href="{% url 'trustee_students' %}" class="btn btn-mentora-outline btn-sm">
+          <i class="bi bi-mortarboard-fill me-1"></i> Scholars Directory ({{ total_students_count }})
+        </a>
+        <a href="{% url 'trustee_feedback' %}" class="btn btn-mentora-outline btn-sm">
+          <i class="bi bi-send-fill me-1"></i> Send Scholar Feedback
+        </a>
+      </div>
+    </div>
+    <div class="col-lg-4 mt-3 mt-lg-0 text-lg-end">
+      <div class="d-inline-block text-start p-3 rounded-3" style="background-color: var(--bg-surface); border: 1px solid var(--border-color);">
+        <div class="small text-muted fw-semibold mb-1">Scholar Accounts</div>
+        <div class="fw-bold small">{{ provisioned_accounts_count }} / {{ total_students_count }} Provisioned</div>
+        <div class="progress mt-2" style="height: 5px; width: 180px;">
+          <div class="progress-bar bg-teal" style="width: {% widthratio provisioned_accounts_count total_students_count 100 %}%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Key Stat Row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper">
+        <i class="bi bi-mortarboard-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ total_students_count }}</div>
+        <div class="stat-label">Total VRCF Scholars</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper" style="background-color: var(--primary-subtle); color: var(--primary-accent);">
+        <i class="bi bi-person-lines-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ active_mentors_count }}</div>
+        <div class="stat-label">Active Mentors</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper" style="background-color: var(--status-success-bg); color: var(--status-success);">
+        <i class="bi bi-check2-all"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ total_tasks_completed }} / {{ total_tasks_assigned }}</div>
+        <div class="stat-label">Tasks Completed</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper" style="background-color: var(--status-warning-bg); color: var(--status-warning);">
+        <i class="bi bi-flag-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ completed_goals_count }} / {{ total_goals_count }}</div>
+        <div class="stat-label">Scholar Goals Met</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Grid -->
+<div class="row g-4">
+  <!-- Left Column: Cohort Distribution & Overview -->
+  <div class="col-lg-7">
+    <div class="mentora-card mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-layers-fill me-2 text-primary"></i>Cohort Representation
+        </h3>
+        <a href="{% url 'trustee_analytics' %}" class="small text-muted text-decoration-none">Full Analytics &rarr;</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+          <thead class="table-light">
+            <tr>
+              <th>Cohort</th>
+              <th>Scholars Count</th>
+              <th>Percentage</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in cohort_breakdown %}
+              <tr>
+                <td class="fw-bold">{{ c.cohort }}</td>
+                <td>{{ c.count }} scholars</td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height: 6px;">
+                      <div class="progress-bar bg-teal" style="width: {% widthratio c.count total_students_count 100 %}%;"></div>
+                    </div>
+                    <span class="text-muted" style="font-size: 0.72rem;">{% widthratio c.count total_students_count 100 %}%</span>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="text-center text-muted">No cohort records.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recent Trustee Feedback Sent -->
+    <div class="mentora-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-chat-left-heart me-2 text-primary"></i>Recent Trustee Guidance Messages
+        </h3>
+        <a href="{% url 'trustee_feedback' %}" class="small text-muted text-decoration-none">Send New &rarr;</a>
+      </div>
+      {% if recent_feedbacks %}
+        <div class="list-group list-group-flush">
+          {% for f in recent_feedbacks %}
+            <div class="list-group-item px-0 py-3 border-bottom" style="background: transparent;">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <div>
+                  <span class="badge-vrcf badge-vrcf-teal">{{ f.student.vrcf_id }}</span>
+                  <span class="fw-bold small">{{ f.student.name }}</span>
+                </div>
+                <small class="text-muted">{{ f.created_at|date:"M d, Y" }}</small>
+              </div>
+              <div class="small fw-semibold text-dark">{{ f.title }}</div>
+              <p class="small text-muted mb-0">"{{ f.message|truncatewords:25 }}"</p>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state py-4 text-center">
+          <p class="text-muted small mb-0">No trustee feedback sent yet. Use the feedback feature to encourage scholars directly.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Column: Program Actions & Oversight -->
+  <div class="col-lg-5">
+    <div class="mentora-card mb-4">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-grid-fill me-2 text-primary"></i>Governance Controls
+      </h3>
+      <div class="d-grid gap-2">
+        <a href="{% url 'trustee_analytics' %}" class="btn btn-mentora w-100 text-start py-2">
+          <i class="bi bi-pie-chart-fill me-2"></i>Interactive Cohort Analytics
+        </a>
+        <a href="{% url 'trustee_students' %}" class="btn btn-mentora-outline w-100 text-start py-2">
+          <i class="bi bi-mortarboard-fill me-2"></i>Browse All VRCF Scholars
+        </a>
+        <a href="{% url 'trustee_mentors' %}" class="btn btn-mentora-outline w-100 text-start py-2">
+          <i class="bi bi-person-lines-fill me-2"></i>Mentorship Program Status
+        </a>
+        <a href="{% url 'trustee_feedback' %}" class="btn btn-mentora-outline w-100 text-start py-2">
+          <i class="bi bi-send-fill me-2"></i>Send Direct Scholar Feedback
+        </a>
+        <a href="{% url 'admin_import_view' %}" class="btn btn-outline-secondary w-100 text-start py-2">
+          <i class="bi bi-file-earmark-spreadsheet me-2"></i>Student Import & Audit Logs
+        </a>
+      </div>
+    </div>
+
+    <div class="mentora-card">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-shield-check me-2 text-primary"></i>Program Integrity
+      </h3>
+      <ul class="list-unstyled small mb-0">
+        <li class="d-flex justify-content-between py-2 border-bottom">
+          <span class="text-muted">Database Engine:</span>
+          <span class="fw-semibold">PostgreSQL (Relational)</span>
+        </li>
+        <li class="d-flex justify-content-between py-2 border-bottom">
+          <span class="text-muted">Assessment Separation:</span>
+          <span class="badge bg-success">Enforced</span>
+        </li>
+        <li class="d-flex justify-content-between py-2 border-bottom">
+          <span class="text-muted">Assessed Scholars:</span>
+          <span class="fw-semibold">{{ assessed_scholars_count }} of {{ total_students_count }}</span>
+        </li>
+        <li class="d-flex justify-content-between py-2">
+          <span class="text-muted">Open Support Alerts:</span>
+          <span class="fw-bold {% if open_alerts_count > 0 %}text-danger{% else %}text-success{% endif %}">{{ open_alerts_count }}</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

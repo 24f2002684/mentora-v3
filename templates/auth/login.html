@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign In — Mentora VRCF{% endblock %}
+
+{% block auth_content %}
+<div class="card mentora-card shadow-lg p-4 p-sm-5" style="max-width: 440px; width: 100%; border-radius: var(--radius-lg);">
+  <div class="text-center mb-4">
+    <img src="{% static 'images/Mentora_Logo.png' %}" alt="Mentora" class="mb-3" style="width: 72px; height: 72px; border-radius: 16px; object-fit: cover; box-shadow: var(--shadow-sm);">
+    <h2 class="h4 fw-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.02em;">Welcome to Mentora</h2>
+    <p class="text-muted small mb-0">Vasumathi Ramaswami Centenary Foundation</p>
+    <div class="badge-vrcf badge-vrcf-teal mt-2">Scholar Development Platform</div>
+  </div>
+
+  <form method="post" action="{% url 'auth_login' %}" id="loginForm">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next|default:'' }}">
+
+    <div class="mb-3">
+      <label for="usernameInput" class="mentora-form-label">Email or Username</label>
+      <div class="input-group">
+        <span class="input-group-text bg-transparent border-end-0" style="border-color: var(--border-color); color: var(--text-muted);">
+          <i class="bi bi-person-fill"></i>
+        </span>
+        <input type="text" name="username" id="usernameInput" class="form-control mentora-form-control border-start-0" placeholder="e.g. suhailmobina95@gmail.com or vrcf32" required autofocus value="{{ username|default:'' }}">
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <label for="passwordInput" class="mentora-form-label mb-0">Password</label>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text bg-transparent border-end-0" style="border-color: var(--border-color); color: var(--text-muted);">
+          <i class="bi bi-lock-fill"></i>
+        </span>
+        <input type="password" name="password" id="passwordInput" class="form-control mentora-form-control border-start-0 border-end-0" placeholder="••••••••" required>
+        <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePasswordBtn" style="border-color: var(--border-color); color: var(--text-muted);">
+          <i class="bi bi-eye" id="togglePasswordIcon"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="remember_me" id="rememberMeCheck" checked>
+        <label class="form-check-label small text-muted" for="rememberMeCheck">
+          Remember me for 30 days
+        </label>
+      </div>
+      <a href="#credentialsHelperModal" data-bs-toggle="modal" class="small text-decoration-none">Account Help?</a>
+    </div>
+
+    <button type="submit" class="btn btn-mentora w-100 py-2 justify-content-center" id="signInSubmitBtn">
+      <span class="spinner-border spinner-border-sm d-none" id="loginSpinner" role="status" aria-hidden="true"></span>
+      <span id="signInText">Sign In to Mentora</span>
+    </button>
+  </form>
+
+  <!-- Help & Credentials reference badge -->
+  <div class="mt-4 pt-3 border-top text-center">
+    <button type="button" class="btn btn-sm btn-mentora-subtle" data-bs-toggle="modal" data-bs-target="#credentialsHelperModal">
+      <i class="bi bi-key-fill text-warning me-1"></i> Quick Test Credentials Guide
+    </button>
+  </div>
+</div>
+
+<!-- Credentials Helper Modal -->
+<div class="modal fade" id="credentialsHelperModal" tabindex="-1" aria-labelledby="credModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+      <div class="modal-header border-bottom" style="border-color: var(--border-color);">
+        <h5 class="modal-title h6 fw-bold" id="credModalLabel">
+          <i class="bi bi-shield-lock-fill text-primary me-2"></i>Platform Test Accounts
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body small">
+        <p class="text-muted">Use any of the following verified credentials to test all roles:</p>
+        <div class="list-group list-group-flush border rounded-3 overflow-hidden">
+          <div class="list-group-item p-3" style="background-color: var(--bg-surface-alt);">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="badge bg-primary">Student Scholar</span>
+              <button class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size:0.75rem;" onclick="fillCreds('suhailmobina95@gmail.com', 'vrcf32')">Use</button>
+            </div>
+            <div><strong>Email:</strong> <code>suhailmobina95@gmail.com</code> (or <code>vrcf32</code>)</div>
+            <div><strong>Password:</strong> <code>vrcf32</code></div>
+            <div class="text-muted" style="font-size:0.72rem;">Suhail Akthar S M (VRCF-032)</div>
+          </div>
+
+          <div class="list-group-item p-3" style="background-color: var(--bg-surface);">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="badge bg-info text-dark">Lead Mentor</span>
+              <button class="btn btn-xs btn-outline-info py-0 px-2" style="font-size:0.75rem;" onclick="fillCreds('mentor@gmail.com', 'mentor@123')">Use</button>
+            </div>
+            <div><strong>Email:</strong> <code>mentor@gmail.com</code> (or <code>mentor</code>)</div>
+            <div><strong>Password:</strong> <code>mentor@123</code></div>
+          </div>
+
+          <div class="list-group-item p-3" style="background-color: var(--bg-surface-alt);">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="badge bg-success">Foundation Trustee</span>
+              <button class="btn btn-xs btn-outline-success py-0 px-2" style="font-size:0.75rem;" onclick="fillCreds('trustee@gmail.com', 'trustee@123')">Use</button>
+            </div>
+            <div><strong>Email:</strong> <code>trustee@gmail.com</code> (or <code>trustee</code>)</div>
+            <div><strong>Password:</strong> <code>trustee@123</code></div>
+          </div>
+
+          <div class="list-group-item p-3" style="background-color: var(--bg-surface);">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="badge bg-dark">System Administrator</span>
+              <button class="btn btn-xs btn-outline-dark py-0 px-2" style="font-size:0.75rem;" onclick="fillCreds('admin@gmail.com', 'admin@123')">Use</button>
+            </div>
+            <div><strong>Email:</strong> <code>admin@gmail.com</code> (or <code>admin</code>)</div>
+            <div><strong>Password:</strong> <code>admin@123</code></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top" style="border-color: var(--border-color);">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Password toggle
+  const toggleBtn = document.getElementById('togglePasswordBtn');
+  const passwordInput = document.getElementById('passwordInput');
+  const toggleIcon = document.getElementById('togglePasswordIcon');
+
+  if (toggleBtn && passwordInput && toggleIcon) {
+    toggleBtn.addEventListener('click', function() {
+      const isPassword = passwordInput.getAttribute('type') === 'password';
+      passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+      toggleIcon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+    });
+  }
+
+  // Loading spinner on submit
+  const form = document.getElementById('loginForm');
+  const submitBtn = document.getElementById('signInSubmitBtn');
+  const spinner = document.getElementById('loginSpinner');
+  const btnText = document.getElementById('signInText');
+
+  if (form && submitBtn && spinner && btnText) {
+    form.addEventListener('submit', function() {
+      submitBtn.disabled = true;
+      spinner.classList.remove('d-none');
+      btnText.textContent = 'Verifying credentials...';
+    });
+  }
+
+  function fillCreds(u, p) {
+    document.getElementById('usernameInput').value = u;
+    document.getElementById('passwordInput').value = p;
+    const modalEl = document.getElementById('credentialsHelperModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+  }
+</script>
+{% endblock %}

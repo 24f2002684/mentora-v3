@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Account Settings — Mentora VRCF{% endblock %}
+{% block page_title %}Settings & Preferences{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Password Change Card -->
+  <div class="col-lg-6">
+    <div class="mentora-card mb-4">
+      <div class="mentora-card-header">
+        <h3 class="mentora-card-title">
+          <i class="bi bi-shield-lock-fill text-primary"></i> Change Password
+        </h3>
+        <span class="badge-vrcf badge-vrcf-neutral small">Default: <code>vrcf&lt;id&gt;</code></span>
+      </div>
+      <p class="small text-muted mb-3">
+        For your account security, update your default password to a strong personal password known only to you.
+      </p>
+
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="change_password" value="1">
+
+        <div class="mb-3">
+          <label for="id_old_password" class="mentora-form-label">Current Password</label>
+          <input type="password" name="old_password" id="id_old_password" class="form-control mentora-form-control" required placeholder="••••••••">
+        </div>
+
+        <div class="mb-3">
+          <label for="id_new_password1" class="mentora-form-label">New Password</label>
+          <input type="password" name="new_password1" id="id_new_password1" class="form-control mentora-form-control" required placeholder="At least 6 characters">
+        </div>
+
+        <div class="mb-4">
+          <label for="id_new_password2" class="mentora-form-label">Confirm New Password</label>
+          <input type="password" name="new_password2" id="id_new_password2" class="form-control mentora-form-control" required placeholder="Confirm new password">
+        </div>
+
+        <button type="submit" class="btn btn-mentora">
+          <i class="bi bi-check-lg"></i> Update Password
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Preferences & Session Details -->
+  <div class="col-lg-6">
+    <!-- Visual Appearance -->
+    <div class="mentora-card mb-4">
+      <div class="mentora-card-header">
+        <h3 class="mentora-card-title">
+          <i class="bi bi-palette-fill text-primary"></i> Theme Preferences
+        </h3>
+      </div>
+      <p class="small text-muted mb-3">
+        Choose your interface theme. Your choice is automatically persisted across sessions.
+      </p>
+
+      <div class="d-flex gap-3">
+        <button type="button" class="btn btn-mentora-outline flex-grow-1 py-2" onclick="Mentora.applyTheme('light')">
+          <i class="bi bi-sun-fill me-2 text-warning"></i> Light Theme
+        </button>
+        <button type="button" class="btn btn-mentora-outline flex-grow-1 py-2" onclick="Mentora.applyTheme('dark')">
+          <i class="bi bi-moon-stars-fill me-2 text-primary"></i> Dark Theme
+        </button>
+      </div>
+    </div>
+
+    <!-- Scholar Account Metadata -->
+    <div class="mentora-card">
+      <div class="mentora-card-header">
+        <h3 class="mentora-card-title">
+          <i class="bi bi-info-circle-fill text-primary"></i> Account Information
+        </h3>
+      </div>
+      <div class="small">
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="text-muted">Username / Identifier:</span>
+          <span class="fw-semibold">{{ user.username }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="text-muted">Registered Email:</span>
+          <span class="fw-semibold">{{ user.email }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="text-muted">VRCF Scholar ID:</span>
+          <span class="fw-semibold">{{ student.vrcf_id }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="text-muted">Cohort:</span>
+          <span class="fw-semibold">{{ student.cohort }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-2">
+          <span class="text-muted">Account Created:</span>
+          <span>{{ user.date_joined|date:"M d, Y" }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

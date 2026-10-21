@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Provision New VRCF Scholar — Mentora Admin{% endblock %}
+{% block page_title %}Provision New VRCF Scholar{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="mentora-card">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 class="h4 fw-bold mb-1">Provision New VRCF Scholar</h2>
+          <p class="text-secondary small mb-0">Create an official scholar record and authenticated portal account in PostgreSQL.</p>
+        </div>
+        <a href="{% if user.role == 'MENTOR' %}{% url 'mentor_students' %}{% else %}{% url 'trustee_students' %}{% endif %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i> Back to Roster
+        </a>
+      </div>
+
+      <form method="post" action="{% url 'admin_student_add' %}">
+        {% csrf_token %}
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label for="id_vrcf_id" class="form-label fw-bold small">VRCF ID *</label>
+            <input type="text" name="vrcf_id" id="id_vrcf_id" class="form-control form-control-mentora" placeholder="e.g. 052 or VRCF-052" required>
+            <div class="form-text small">Standard 3-digit VRCF format.</div>
+          </div>
+          <div class="col-md-6">
+            <label for="id_name" class="form-label fw-bold small">Full Name *</label>
+            <input type="text" name="name" id="id_name" class="form-control form-control-mentora" placeholder="e.g. Ananya R" required>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label for="id_cohort" class="form-label fw-bold small">Cohort</label>
+            <input type="text" name="cohort" id="id_cohort" class="form-control form-control-mentora" placeholder="e.g. 2025-2026">
+          </div>
+          <div class="col-md-5">
+            <label for="id_course_name" class="form-label fw-bold small">Course / Degree</label>
+            <input type="text" name="course_name" id="id_course_name" class="form-control form-control-mentora" placeholder="e.g. B.Tech Artificial Intelligence & Data Science">
+          </div>
+          <div class="col-md-3">
+            <label for="id_year_of_study" class="form-label fw-bold small">Year of Study</label>
+            <input type="text" name="year_of_study" id="id_year_of_study" class="form-control form-control-mentora" placeholder="e.g. 2nd Year">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="id_college_name_district" class="form-label fw-bold small">College & District</label>
+          <input type="text" name="college_name_district" id="id_college_name_district" class="form-control form-control-mentora" placeholder="e.g. Sri Krishna College of Engineering and Technology, Coimbatore">
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label for="id_email_self" class="form-label fw-bold small">Email Address</label>
+            <input type="email" name="email_self" id="id_email_self" class="form-control form-control-mentora" placeholder="scholar@example.com">
+          </div>
+          <div class="col-md-6">
+            <label for="id_phone_self" class="form-label fw-bold small">Phone Number</label>
+            <input type="text" name="phone_self" id="id_phone_self" class="form-control form-control-mentora" placeholder="e.g. 9876543210">
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label for="id_home_district" class="form-label fw-bold small">Home District</label>
+            <input type="text" name="home_district" id="id_home_district" class="form-control form-control-mentora" placeholder="e.g. Tiruchirappalli">
+          </div>
+          <div class="col-md-6">
+            <label for="id_hostel_or_dayscholar" class="form-label fw-bold small">Accommodation</label>
+            <select name="hostel_or_dayscholar" id="id_hostel_or_dayscholar" class="form-select form-control-mentora">
+              <option value="Day Scholar" selected>Day Scholar</option>
+              <option value="Hosteller">Hosteller</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="id_password" class="form-label fw-bold small">Initial Password (Optional)</label>
+          <input type="text" name="password" id="id_password" class="form-control form-control-mentora" placeholder="Leave empty for default 'vrcf<id>' (e.g. vrcf52)">
+          <div class="form-text small">Scholar will be able to update their password anytime in Settings.</div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% if user.role == 'MENTOR' %}{% url 'mentor_students' %}{% else %}{% url 'trustee_students' %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-mentora px-4">
+            <i class="bi bi-person-check-fill me-1"></i> Provision Scholar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

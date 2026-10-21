@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AI Socratic Mentor — Mentora VRCF{% endblock %}
+{% block page_title %}Socratic AI Mentor{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Main Chat Interface -->
+  <div class="col-lg-8">
+    <div class="chat-window shadow-sm">
+      <!-- Chat Header -->
+      <div class="d-flex align-items-center justify-content-between p-3 border-bottom" style="background-color: var(--bg-surface-alt);">
+        <div class="d-flex align-items-center gap-2">
+          <div class="chat-avatar ai-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">
+            <i class="bi bi-stars"></i>
+          </div>
+          <div>
+            <span class="fw-bold small d-block" id="activeConvTitle">
+              {{ current_conversation.title|default:"Socratic Mentoring Session" }}
+            </span>
+            <span class="text-muted" style="font-size: 0.7rem;">Adaptive Learning Coach &bull; Powered by Gemini</span>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <a href="{% url 'student_ai_mentor' %}" class="btn btn-mentora-subtle btn-sm py-1 px-2" style="font-size: 0.78rem;">
+            <i class="bi bi-plus-lg me-1"></i>New Chat
+          </a>
+        </div>
+      </div>
+
+      <!-- Messages Stream -->
+      <div class="chat-messages-container" id="chatMessages">
+        {% if messages_list %}
+          {% for msg in messages_list %}
+            <div class="chat-message {% if msg.role == 'user' %}student{% else %}mentor{% endif %}">
+              <div class="chat-avatar {% if msg.role == 'user' %}user-avatar{% else %}ai-avatar{% endif %}">
+                {% if msg.role == 'user' %}{{ student.name|slice:":1"|upper }}{% else %}<i class="bi bi-stars"></i>{% endif %}
+              </div>
+              <div class="chat-bubble">
+                <div style="white-space: pre-wrap;">{{ msg.content }}</div>
+                <div class="text-end mt-1" style="font-size: 0.68rem; opacity: 0.7;">
+                  {{ msg.created_at|date:"H:i" }}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <!-- Empty State & Starter Prompts -->
+          <div class="mentora-empty-state my-auto">
+            <div class="chat-avatar ai-avatar mb-3" style="width: 56px; height: 56px; font-size: 1.5rem;">
+              <i class="bi bi-stars"></i>
+            </div>
+            <h3 class="empty-state-title">Greetings, {{ student.name }}!</h3>
+            <p class="empty-state-text">
+              I am your Socratic mentor. I'm here to challenge assumptions, guide problem-solving, and help you develop critical thinking. What would you like to explore today?
+            </p>
+
+            <div class="d-flex flex-wrap justify-content-center gap-2 mt-2" style="max-width: 550px;">
+              <button class="btn btn-mentora-subtle btn-sm text-start" onclick="setPrompt('Help me break down my semester academic goal into weekly milestones')">
+                <i class="bi bi-calendar3 me-1"></i> Break down my semester goals
+              </button>
+              <button class="btn btn-mentora-subtle btn-sm text-start" onclick="setPrompt('Challenge my reasoning on career preparation for my degree')">
+                <i class="bi bi-compass me-1"></i> Examine career reasoning
+              </button>
+              <button class="btn btn-mentora-subtle btn-sm text-start" onclick="setPrompt('Test my understanding of a complex concept with Socratic questions')">
+                <i class="bi bi-lightbulb me-1"></i> Test my understanding
+              </button>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Chat Input Bar -->
+      <form id="chatForm" class="chat-input-bar">
+        {% csrf_token %}
+        <input type="hidden" name="conversation_id" id="convIdInput" value="{{ current_conversation.id|default:'' }}">
+        <textarea name="prompt" id="chatPromptInput" rows="1" class="form-control mentora-form-control" placeholder="Ask a question, reflect on an idea, or ask for guidance..." required style="resize: none;">{{ starter_prompt }}</textarea>
+        <button type="submit" class="btn btn-mentora btn-sm px-3" id="sendBtn">
+          <i class="bi bi-send-fill" id="sendIcon"></i>
+          <span class="spinner-border spinner-border-sm d-none" id="sendSpinner" role="status"></span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right Sidebar: Conversations History & Structured Challenges -->
+  <div class="col-lg-4">
+    <!-- Chat History List -->
+    <div class="mentora-card mb-4">
+      <div class="mentora-card-header">
+        <h4 class="mentora-card-title h6 mb-0">
+          <i class="bi bi-clock-history text-primary"></i> Past Sessions
+        </h4>
+      </div>
+      <div class="list-group list-group-flush" style="max-height: 260px; overflow-y: auto;">
+        {% if conversations %}
+          {% for c in conversations %}
+            <div class="list-group-item list-group-item-action px-2 py-2 d-flex justify-content-between align-items-center {% if current_conversation.id == c.id %}active bg-primary-subtle text-primary border-primary{% endif %}" style="background-color: var(--bg-surface);">
+              <a href="{% url 'student_ai_mentor' %}?conversation={{ c.id }}" class="text-truncate text-decoration-none small text-reset flex-grow-1">
+                <i class="bi bi-chat-left-text me-1"></i> {{ c.title }}
+              </a>
+              <button class="btn btn-link btn-sm text-muted p-0 ms-2" onclick="deleteConversation({{ c.id }}, this)" title="Delete session">
+                <i class="bi bi-trash3" style="font-size: 0.8rem;"></i>
+              </button>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="p-3 text-center text-muted small">No saved chat sessions.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Structured Socratic Challenges -->
+    <div class="mentora-card">
+      <div class="mentora-card-header">
+        <h4 class="mentora-card-title h6 mb-0">
+          <i class="bi bi-lightning-charge-fill text-warning"></i> Socratic Challenges
+        </h4>
+      </div>
+      <p class="small text-muted mb-3">
+        Generate practical scenario challenges to test critical thinking and earn formative badges.
+      </p>
+
+      <div class="dropdown mb-3">
+        <button class="btn btn-mentora-outline btn-sm w-100 dropdown-toggle justify-content-between" type="button" data-bs-toggle="dropdown">
+          Generate New Challenge
+        </button>
+        <ul class="dropdown-menu w-100 shadow border">
+          {% for comp in competencies %}
+            <li>
+              <a class="dropdown-item small" href="{% url 'student_activity_create' %}?competency={{ comp.code }}">
+                <i class="bi {{ comp.icon }} me-2 text-primary"></i> {{ comp.name }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      {% if activities %}
+        <div class="d-flex flex-column gap-2">
+          {% for act in activities %}
+            <div class="p-2 rounded border small" style="background-color: var(--bg-surface-alt);">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-semibold text-truncate" style="max-width: 170px;">{{ act.title }}</span>
+                <span class="badge-vrcf {% if act.status == 'COMPLETED' %}badge-vrcf-success{% else %}badge-vrcf-warning{% endif %}" style="font-size: 0.68rem;">
+                  {{ act.get_status_display }}
+                </span>
+              </div>
+              <a href="{% url 'student_activity_submit' act.id %}" class="small text-decoration-none">
+                {% if act.status == 'COMPLETED' %}View Review &rarr;{% else %}Take Challenge &rarr;{% endif %}
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const chatMessages = document.getElementById('chatMessages');
+  const chatForm = document.getElementById('chatForm');
+  const promptInput = document.getElementById('chatPromptInput');
+  const convIdInput = document.getElementById('convIdInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const sendIcon = document.getElementById('sendIcon');
+  const sendSpinner = document.getElementById('sendSpinner');
+
+  function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+  scrollToBottom();
+
+  function setPrompt(text) {
+    promptInput.value = text;
+    promptInput.focus();
+  }
+
+  // Handle message sending via Fetch
+  if (chatForm) {
+    chatForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const prompt = promptInput.value.trim();
+      if (!prompt) return;
+
+      // Append user bubble immediately
+      appendMessage('user', prompt, 'Just now');
+      promptInput.value = '';
+      scrollToBottom();
+
+      // Show spinner
+      sendBtn.disabled = true;
+      sendIcon.classList.add('d-none');
+      sendSpinner.classList.remove('d-none');
+
+      const formData = new FormData();
+      formData.append('prompt', prompt);
+      if (convIdInput.value) {
+        formData.append('conversation_id', convIdInput.value);
+      }
+
+      fetch('/student/ai-mentor/chat/send/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': Mentora.getCsrfToken()
+        },
+        body: formData
+      })
+      .then(r => r.json())
+      .then(data => {
+        sendBtn.disabled = false;
+        sendIcon.classList.remove('d-none');
+        sendSpinner.classList.add('d-none');
+
+        if (data.status === 'success') {
+          convIdInput.value = data.conversation_id;
+          document.getElementById('activeConvTitle').textContent = data.conversation_title;
+          appendMessage('model', data.ai_message.content, data.ai_message.time);
+          scrollToBottom();
+        } else {
+          Mentora.showToast('Could not reach mentor engine.', 'danger');
+        }
+      })
+      .catch(err => {
+        sendBtn.disabled = false;
+        sendIcon.classList.remove('d-none');
+        sendSpinner.classList.add('d-none');
+        Mentora.showToast('Network error while consulting AI mentor.', 'danger');
+      });
+    });
+  }
+
+  function appendMessage(role, content, time) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `chat-message ${role === 'user' ? 'student' : 'mentor'}`;
+    msgDiv.innerHTML = `
+      <div class="chat-avatar ${role === 'user' ? 'user-avatar' : 'ai-avatar'}">
+        ${role === 'user' ? '{{ student.name|slice:":1"|upper }}' : '<i class="bi bi-stars"></i>'}
+      </div>
+      <div class="chat-bubble">
+        <div style="white-space: pre-wrap;">${escapeHtml(content)}</div>
+        <div class="text-end mt-1" style="font-size: 0.68rem; opacity: 0.7;">${time}</div>
+      </div>
+    `;
+    chatMessages.appendChild(msgDiv);
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function deleteConversation(id, btn) {
+    if (!confirm('Are you sure you want to delete this chat session?')) return;
+    fetch(`/student/ai-mentor/conversations/${id}/delete/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': Mentora.getCsrfToken()
+      }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'success') {
+        btn.closest('.list-group-item').remove();
+        Mentora.showToast('Session removed.', 'info');
+      }
+    });
+  }
+</script>
+{% endblock %}

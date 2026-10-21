@@ -1,0 +1,94 @@
+{% load static %}
+<header class="mentora-topbar">
+  <div class="topbar-left">
+    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle" aria-label="Toggle navigation">
+      <i class="bi bi-list"></i>
+    </button>
+    <div class="d-flex flex-column">
+      <h1 class="h6 mb-0 fw-bold">{% block page_title %}Dashboard{% endblock %}</h1>
+      <span class="text-muted d-none d-md-inline" style="font-size: 0.76rem;">Vasumathi Ramaswami Centenary Foundation</span>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <!-- Theme Toggle -->
+    <button id="themeToggleBtn" class="btn btn-mentora-subtle btn-sm" aria-label="Toggle dark/light theme" title="Toggle Theme">
+      <i id="themeToggleIcon" class="bi bi-moon-stars-fill"></i>
+    </button>
+
+    <!-- Notification Dropdown -->
+    <div class="dropdown">
+      <button class="btn btn-mentora-subtle btn-sm position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-bell-fill"></i>
+        {% if unread_notifications_count > 0 %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+            {{ unread_notifications_count }}
+          </span>
+        {% endif %}
+      </button>
+      <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border" style="width: 320px; max-height: 400px; overflow-y: auto; background-color: var(--bg-surface);">
+        <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
+          <span class="fw-bold small">Notifications</span>
+          {% if unread_notifications_count > 0 %}
+            <span class="badge bg-primary rounded-pill small">{{ unread_notifications_count }} new</span>
+          {% endif %}
+        </div>
+        <div class="list-group list-group-flush">
+          {% if recent_notifications %}
+            {% for notif in recent_notifications %}
+              <div class="list-group-item list-group-item-action p-3 border-bottom" style="background-color: var(--bg-surface);">
+                <div class="d-flex w-100 justify-content-between">
+                  <span class="fw-semibold small text-truncate" style="max-width: 200px;">{{ notif.title }}</span>
+                  <small class="text-muted" style="font-size: 0.7rem;">{{ notif.created_at|timesince }} ago</small>
+                </div>
+                <p class="mb-1 text-muted small" style="font-size: 0.82rem;">{{ notif.message }}</p>
+                {% if notif.link %}
+                  <a href="{{ notif.link }}" class="small fw-semibold text-decoration-none">View details &rarr;</a>
+                {% endif %}
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="p-4 text-center text-muted small">
+              <i class="bi bi-bell-slash fs-4 d-block mb-1"></i>
+              No recent notifications
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- User Menu -->
+    <div class="dropdown">
+      <button class="btn btn-mentora-subtle btn-sm d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" style="width: 28px; height: 28px; background-color: var(--primary-accent); font-size: 0.8rem;">
+          {{ user.first_name|default:user.username|slice:":1"|upper }}
+        </div>
+        <span class="d-none d-sm-inline fw-semibold small">{{ user.first_name|default:user.username }}</span>
+        <i class="bi bi-chevron-down" style="font-size: 0.7rem;"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow border" style="background-color: var(--bg-surface);">
+        <li class="px-3 py-2 border-bottom">
+          <div class="fw-semibold small">{{ user.get_full_name|default:user.username }}</div>
+          <div class="text-muted" style="font-size: 0.72rem;">{{ user.email }}</div>
+        </li>
+        {% if user.is_student %}
+          <li><a class="dropdown-item small" href="{% url 'student_profile' %}"><i class="bi bi-person me-2"></i>My Profile</a></li>
+          <li><a class="dropdown-item small" href="{% url 'student_settings' %}"><i class="bi bi-gear me-2"></i>Settings</a></li>
+        {% elif user.is_mentor %}
+          <li><a class="dropdown-item small" href="{% url 'mentor_students' %}"><i class="bi bi-people me-2"></i>My Students</a></li>
+        {% elif user.is_trustee %}
+          <li><a class="dropdown-item small" href="{% url 'trustee_analytics' %}"><i class="bi bi-pie-chart me-2"></i>Analytics</a></li>
+        {% endif %}
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <form action="{% url 'auth_logout' %}" method="post" class="px-2 m-0">
+            {% csrf_token %}
+            <button type="submit" class="dropdown-item small text-danger rounded">
+              <i class="bi bi-box-arrow-right me-2"></i>Sign Out
+            </button>
+          </form>
+        </li>
+      </ul>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mentor Dashboard — Mentora VRCF{% endblock %}
+{% block page_title %}Mentor Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome Banner -->
+<div class="mentora-card mb-4" style="background: linear-gradient(135deg, var(--bg-surface) 0%, var(--primary-subtle) 100%); border-left: 4px solid var(--primary-accent);">
+  <div class="row align-items-center">
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge-vrcf badge-vrcf-teal">VRCF Mentorship</span>
+        <span class="badge-vrcf badge-vrcf-neutral">{{ mentor.designation }}</span>
+      </div>
+      <h2 class="h3 fw-bold mb-2">Welcome, {{ mentor.name }}</h2>
+      <p class="text-secondary mb-3">
+        Guiding and assessing VRCF scholars across critical reasoning, leadership, and career readiness.
+      </p>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'mentor_task_assign' %}" class="btn btn-mentora btn-sm">
+          <i class="bi bi-plus-circle"></i> Assign Task
+        </a>
+        <a href="{% url 'mentor_submissions' %}" class="btn btn-mentora-outline btn-sm">
+          <i class="bi bi-file-earmark-check"></i> Submissions Queue ({{ pending_reviews_count }})
+        </a>
+        <a href="{% url 'mentor_students' %}" class="btn btn-mentora-outline btn-sm">
+          <i class="bi bi-people"></i> View Scholars ({{ assigned_students_count }})
+        </a>
+      </div>
+    </div>
+    <div class="col-lg-4 mt-3 mt-lg-0 text-lg-end">
+      <div class="d-inline-block text-start p-3 rounded-3" style="background-color: var(--bg-surface); border: 1px solid var(--border-color);">
+        <div class="small text-muted fw-semibold mb-1">Organization</div>
+        <div class="fw-bold small text-truncate" style="max-width: 200px;">{{ mentor.organization|default:'VRCF Foundation' }}</div>
+        <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Active Roster: {{ assigned_students_count }} Scholars</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Key Stat Widgets -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ assigned_students_count }}</div>
+        <div class="stat-label">Assigned Scholars</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper" style="background-color: var(--primary-subtle); color: var(--primary-accent);">
+        <i class="bi bi-list-task"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ active_tasks_count }}</div>
+        <div class="stat-label">Active Assignments</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper" style="background-color: var(--status-warning-bg); color: var(--status-warning);">
+        <i class="bi bi-hourglass-split"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ pending_reviews_count }}</div>
+        <div class="stat-label">Submissions to Review</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper" style="background-color: var(--status-danger-bg); color: var(--status-danger);">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ open_alerts_count }}</div>
+        <div class="stat-label">Support Alerts</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Support Alerts Banner (if any) -->
+{% if open_alerts %}
+<div class="mentora-card mb-4" style="border-left: 4px solid var(--status-danger);">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="card-title text-danger mb-0">
+      <i class="bi bi-bell-fill me-2"></i>Scholars Requiring Mentor Follow-up
+    </h3>
+    <a href="{% url 'mentor_support_alerts' %}" class="small text-muted text-decoration-none">View All Alerts &rarr;</a>
+  </div>
+  <div class="row g-2">
+    {% for alert in open_alerts %}
+      <div class="col-md-6">
+        <div class="p-3 rounded-2" style="background-color: var(--status-danger-bg); border: 1px solid rgba(239, 68, 68, 0.2);">
+          <div class="d-flex justify-content-between">
+            <span class="fw-bold small text-danger">{{ alert.student.name }} ({{ alert.student.vrcf_id }})</span>
+            <span class="badge bg-danger">{{ alert.get_severity_display }}</span>
+          </div>
+          <div class="small text-secondary mt-1">{{ alert.explanation }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Main Section Grid -->
+<div class="row g-4">
+  <!-- Left Column: Pending Reviews & Recent Activity -->
+  <div class="col-lg-7">
+    <div class="mentora-card mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-file-earmark-text me-2 text-primary"></i>Submissions Awaiting Review
+        </h3>
+        <a href="{% url 'mentor_submissions' %}?status=awaiting" class="small text-muted text-decoration-none">View Queue &rarr;</a>
+      </div>
+
+      {% if recent_submissions %}
+        <div class="list-group list-group-flush">
+          {% for sub in recent_submissions %}
+            <div class="list-group-item px-0 py-3 d-flex justify-content-between align-items-center border-bottom" style="background: transparent;">
+              <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <span class="badge-vrcf badge-vrcf-teal">{{ sub.student.vrcf_id }}</span>
+                  <span class="fw-bold text-dark">{{ sub.student.name }}</span>
+                </div>
+                <div class="small text-secondary fw-semibold">{{ sub.task.title }}</div>
+                <div class="text-muted" style="font-size: 0.75rem;">Submitted {{ sub.submitted_at|date:"M d, Y, h:i A" }}</div>
+              </div>
+              <a href="{% url 'mentor_submission_review' sub.id %}" class="btn btn-sm btn-mentora">
+                Review & Assess
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state py-4 text-center">
+          <i class="bi bi-check2-all text-muted fs-1 mb-2"></i>
+          <p class="text-muted mb-0">All submitted assignments have been reviewed. Excellent work!</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="mentora-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-clock-history me-2 text-primary"></i>Recent Published Reviews
+        </h3>
+        <a href="{% url 'mentor_submissions' %}?status=reviewed" class="small text-muted text-decoration-none">History &rarr;</a>
+      </div>
+
+      {% if recent_reviews %}
+        <div class="list-group list-group-flush">
+          {% for review in recent_reviews %}
+            <div class="list-group-item px-0 py-3 border-bottom" style="background: transparent;">
+              <div class="d-flex justify-content-between align-items-start mb-1">
+                <div>
+                  <span class="fw-bold">{{ review.student.name }}</span>
+                  <span class="text-muted small">({{ review.task.title }})</span>
+                </div>
+                {% if review.mentor_rating %}
+                  <span class="badge-vrcf badge-vrcf-teal">{{ review.mentor_rating }}/5 Rating</span>
+                {% endif %}
+              </div>
+              <p class="small text-secondary mb-1">"{{ review.mentor_feedback|truncatewords:20 }}"</p>
+              <small class="text-muted" style="font-size: 0.72rem;">Reviewed on {{ review.reviewed_at|date:"M d, Y" }}</small>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state py-4 text-center">
+          <p class="text-muted mb-0">No published reviews recorded yet.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Column: Quick Actions & Scholar Roster -->
+  <div class="col-lg-5">
+    <div class="mentora-card mb-4">
+      <h3 class="card-title mb-3">
+        <i class="bi bi-lightning-charge me-2 text-primary"></i>Mentorship Actions
+      </h3>
+      <div class="d-grid gap-2">
+        <a href="{% url 'mentor_task_assign' %}" class="btn btn-mentora w-100 text-start py-2">
+          <i class="bi bi-pencil-square me-2"></i>Create New Task Assignment
+        </a>
+        <a href="{% url 'mentor_reports' %}" class="btn btn-mentora-outline w-100 text-start py-2">
+          <i class="bi bi-file-earmark-pdf me-2"></i>Generate Scholar Growth PDF Reports
+        </a>
+        <a href="{% url 'mentor_students' %}" class="btn btn-mentora-outline w-100 text-start py-2">
+          <i class="bi bi-search me-2"></i>Search VRCF Scholar Roster
+        </a>
+        <a href="{% url 'admin_student_add' %}" class="btn btn-mentora-outline w-100 text-start py-2">
+          <i class="bi bi-person-plus me-2"></i>Provision New Scholar
+        </a>
+      </div>
+    </div>
+
+    <div class="mentora-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-mortarboard me-2 text-primary"></i>Assigned Scholars
+        </h3>
+        <a href="{% url 'mentor_students' %}" class="small text-muted text-decoration-none">View All &rarr;</a>
+      </div>
+      <p class="small text-muted mb-3">43 VRCF Scholars currently active in the mentorship cohort.</p>
+      <a href="{% url 'mentor_students' %}" class="btn btn-sm btn-outline-secondary w-100">
+        Browse Scholars Directory
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

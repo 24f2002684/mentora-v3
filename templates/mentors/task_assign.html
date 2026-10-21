@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Assign Development Task — Mentora VRCF{% endblock %}
+{% block page_title %}Assign Development Task{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <div class="mentora-card">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 class="h4 fw-bold mb-1">Assign Development Task</h2>
+          <p class="text-secondary small mb-0">Create a reflective, academic, or leadership assignment for VRCF scholars.</p>
+        </div>
+        <a href="{% url 'mentor_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i> Cancel
+        </a>
+      </div>
+
+      <form method="post" action="{% url 'mentor_task_assign' %}">
+        {% csrf_token %}
+
+        <!-- Target Scholars Selection -->
+        <div class="mb-4 p-3 rounded-2" style="background-color: var(--primary-subtle); border: 1px solid var(--border-color);">
+          <label class="form-label fw-bold small text-teal mb-2">Target Scholars</label>
+          <div class="d-flex gap-4 mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="target_mode" id="target_specific" value="specific" checked onchange="toggleStudentPicker(true)">
+              <label class="form-check-label small fw-semibold" for="target_specific">
+                Select Specific Scholar(s)
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="target_mode" id="target_all" value="all" onchange="toggleStudentPicker(false)">
+              <label class="form-check-label small fw-semibold" for="target_all">
+                Assign to All Assigned Scholars ({{ authorized_students.count }})
+              </label>
+            </div>
+          </div>
+
+          <div id="student_picker_container">
+            <label class="form-label small text-muted">Select Scholars:</label>
+            <div class="row g-2" style="max-height: 180px; overflow-y: auto;">
+              {% for s in authorized_students %}
+                <div class="col-md-6 col-lg-4">
+                  <div class="form-check small">
+                    <input class="form-check-input student-check" type="checkbox" name="student_ids" value="{{ s.id }}" id="student_{{ s.id }}" {% if preselected_student_id == s.id %}checked{% endif %}>
+                    <label class="form-check-label text-truncate d-block" for="student_{{ s.id }}" title="{{ s.name }} ({{ s.vrcf_id }})">
+                      <strong>{{ s.vrcf_id }}</strong> - {{ s.name }}
+                    </label>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Task Core Information -->
+        <div class="mb-3">
+          <label for="id_title" class="form-label fw-bold small">Task Title *</label>
+          <input type="text" name="title" id="id_title" class="form-control form-control-mentora" placeholder="e.g., Executive Summary: Analytical Case Study on Community Leadership" required>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label for="id_due_date" class="form-label fw-bold small">Due Date *</label>
+            <input type="date" name="due_date" id="id_due_date" class="form-control form-control-mentora" required>
+          </div>
+          <div class="col-md-6">
+            <label for="id_priority" class="form-label fw-bold small">Priority Level</label>
+            <select name="priority" id="id_priority" class="form-select form-control-mentora">
+              <option value="MEDIUM" selected>Medium Priority</option>
+              <option value="HIGH">High Priority</option>
+              <option value="LOW">Low Priority</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="id_instructions" class="form-label fw-bold small">Detailed Instructions *</label>
+          <textarea name="instructions" id="id_instructions" rows="4" class="form-control form-control-mentora" placeholder="Explain the context, requirements, background reading, and steps the scholar should take..." required></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label for="id_deliverables" class="form-label fw-bold small">Expected Deliverables</label>
+          <textarea name="deliverables" id="id_deliverables" rows="2" class="form-control form-control-mentora" placeholder="e.g., 500-word reflective synthesis document, presentation outline, or project plan..."></textarea>
+        </div>
+
+        <!-- Focus Competencies -->
+        <div class="mb-3">
+          <label class="form-label fw-bold small">Target Competency Domains</label>
+          <p class="text-muted small mb-2">Select the VRCF core competency areas this assignment focuses on:</p>
+          <div class="row g-2">
+            {% for comp in competencies %}
+              <div class="col-md-6">
+                <div class="form-check small">
+                  <input class="form-check-input" type="checkbox" name="competencies" value="{{ comp.id }}" id="comp_{{ comp.id }}">
+                  <label class="form-check-label" for="comp_{{ comp.id }}">
+                    {{ comp.name }}
+                  </label>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="id_evaluation_criteria" class="form-label fw-bold small">Evaluation Criteria & Rubric</label>
+          <textarea name="evaluation_criteria" id="id_evaluation_criteria" rows="2" class="form-control form-control-mentora" placeholder="e.g., Depth of reasoning (40%), Evidence of self-reflection (30%), Structure & clarity (30%)..."></textarea>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'mentor_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-mentora px-4">
+            <i class="bi bi-send me-1"></i> Assign Task to Scholars
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleStudentPicker(show) {
+  const container = document.getElementById('student_picker_container');
+  if (show) {
+    container.style.display = 'block';
+  } else {
+    container.style.display = 'none';
+  }
+}
+</script>
+{% endblock %}

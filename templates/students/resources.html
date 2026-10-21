@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Resource Library — Mentora VRCF{% endblock %}
+{% block page_title %}Curated Academic & Career Resources{% endblock %}
+
+{% block content %}
+<div class="mentora-card mb-4">
+  <!-- Filter & Search Bar -->
+  <form method="get" class="row g-2 align-items-center mb-3">
+    <div class="col-md-4">
+      <div class="input-group">
+        <span class="input-group-text bg-transparent border-end-0" style="border-color: var(--border-color); color: var(--text-muted);">
+          <i class="bi bi-search"></i>
+        </span>
+        <input type="text" name="topic" class="form-control mentora-form-control border-start-0" placeholder="Search by topic or title..." value="{{ selected_topic }}">
+      </div>
+    </div>
+    <div class="col-md-3">
+      <select name="competency" class="form-select mentora-form-control" onchange="this.form.submit()">
+        <option value="">-- All Competencies --</option>
+        {% for c in competencies %}
+          <option value="{{ c.code }}" {% if selected_comp == c.code %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="type" class="form-select mentora-form-control" onchange="this.form.submit()">
+        <option value="">-- All Formats --</option>
+        <option value="ARTICLE" {% if selected_type == 'ARTICLE' %}selected{% endif %}>Article / Reading</option>
+        <option value="COURSE" {% if selected_type == 'COURSE' %}selected{% endif %}>Online Course</option>
+        <option value="VIDEO" {% if selected_type == 'VIDEO' %}selected{% endif %}>Video Lecture</option>
+        <option value="WEBSITE" {% if selected_type == 'WEBSITE' %}selected{% endif %}>Website / Portal</option>
+      </select>
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-mentora btn-sm flex-grow-1">Filter</button>
+      <a href="{% url 'student_resources' %}" class="btn btn-mentora-subtle btn-sm" title="Clear Filters"><i class="bi bi-x-lg"></i></a>
+    </div>
+  </form>
+</div>
+
+<!-- Resource Cards Grid -->
+{% if resources %}
+  <div class="row g-3">
+    {% for res in resources %}
+      <div class="col-md-6 col-lg-4">
+        <div class="mentora-card h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="badge-vrcf badge-vrcf-teal small">{{ res.get_resource_type_display }}</span>
+              <button class="btn btn-link p-0 text-muted" onclick="toggleSaveResource({{ res.id }}, this)" title="Bookmark Resource">
+                <i class="bi {% if res.id in saved_ids %}bi-bookmark-fill text-warning{% else %}bi-bookmark{% endif %} fs-5"></i>
+              </button>
+            </div>
+            <h4 class="h6 fw-bold mb-2">
+              <a href="{{ res.url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                {{ res.title }} <i class="bi bi-box-arrow-up-right small"></i>
+              </a>
+            </h4>
+            <p class="small text-muted mb-3">{{ res.description|truncatewords:24 }}</p>
+          </div>
+
+          <div class="border-top pt-2 mt-2 d-flex justify-content-between align-items-center">
+            <span class="text-muted" style="font-size: 0.72rem;">{{ res.publisher|default:"Verified Source" }}</span>
+            {% if res.competency %}
+              <span class="badge-vrcf badge-vrcf-neutral small">{{ res.competency.name }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="mentora-card">
+    <div class="mentora-empty-state py-5">
+      <i class="bi bi-journal-x empty-state-icon"></i>
+      <div class="empty-state-title">No Resources Match Your Filter</div>
+      <div class="empty-state-text">Try adjusting your filters or search keywords.</div>
+      <a href="{% url 'student_resources' %}" class="btn btn-mentora-outline btn-sm">Reset Filters</a>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function toggleSaveResource(id, btn) {
+    fetch(`/student/resources/${id}/save/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': Mentora.getCsrfToken()
+      }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'success') {
+        const icon = btn.querySelector('i');
+        if (data.is_saved) {
+          icon.className = 'bi bi-bookmark-fill text-warning fs-5';
+          Mentora.showToast('Resource bookmarked to your library.', 'success');
+        } else {
+          icon.className = 'bi bi-bookmark fs-5';
+          Mentora.showToast('Bookmark removed.', 'info');
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

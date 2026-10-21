@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mentorship Program Oversight — Mentora VRCF{% endblock %}
+{% block page_title %}Mentorship Program Oversight{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h2 class="h4 fw-bold mb-1">Mentorship Program & Roster Status</h2>
+    <p class="text-secondary small mb-0">Overview of active mentor assignments, task creation activity, and submission review capacity.</p>
+  </div>
+</div>
+
+<!-- Stat Row -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper">
+        <i class="bi bi-person-lines-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ mentors.count }}</div>
+        <div class="stat-label">Active Mentors</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper" style="background-color: var(--primary-subtle); color: var(--primary-accent);">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ total_assignments }}</div>
+        <div class="stat-label">Active Scholar Assignments</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-widget">
+      <div class="stat-icon-wrapper" style="background-color: var(--status-success-bg); color: var(--status-success);">
+        <i class="bi bi-shield-check"></i>
+      </div>
+      <div>
+        <div class="stat-value">{% if unassigned_scholars == 0 %}100%{% else %}{{ unassigned_scholars }} Unassigned{% endif %}</div>
+        <div class="stat-label">Scholar Roster Coverage</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mentors Table -->
+<div class="mentora-card p-0 overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th scope="col" class="ps-4">Mentor Name</th>
+          <th scope="col">Designation & Org</th>
+          <th scope="col">Contact</th>
+          <th scope="col" class="text-center">Assigned Scholars</th>
+          <th scope="col" class="text-center">Tasks Created</th>
+          <th scope="col" class="text-center">Reviews Completed</th>
+          <th scope="col" class="text-end pe-4">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in mentors %}
+          <tr>
+            <td class="ps-4">
+              <div class="d-flex align-items-center gap-2">
+                <div class="stat-icon-wrapper" style="width: 32px; height: 32px; font-size: 0.85rem;">
+                  {{ m.name|slice:":1"|upper }}
+                </div>
+                <div class="fw-bold small">{{ m.name }}</div>
+              </div>
+            </td>
+            <td>
+              <div class="small fw-semibold">{{ m.designation|default:'VRCF Mentor' }}</div>
+              <small class="text-muted">{{ m.organization|default:'Vasumathi Ramaswami Centenary Foundation' }}</small>
+            </td>
+            <td>
+              <div class="small">{{ m.email }}</div>
+              <small class="text-muted">{{ m.phone|default:'—' }}</small>
+            </td>
+            <td class="text-center">
+              <span class="badge-vrcf badge-vrcf-teal">{{ m.assigned_scholars_count }}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-light text-dark border">{{ m.tasks_created_count }}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-light text-dark border">{{ m.reviews_conducted_count }}</span>
+            </td>
+            <td class="text-end pe-4">
+              <span class="badge bg-success">Active</span>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-4 text-muted">No active mentors found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
