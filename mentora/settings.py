@@ -48,6 +48,9 @@ INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
 
+    # Storage & Utilities
+    'storages',
+
     # Custom Core and Domain Applications
     'core.apps.CoreConfig',
     'students.apps.StudentsConfig',
@@ -87,7 +90,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'mentora.wsgi.application'
 
-# Database Configuration (PostgreSQL)
+# Database Configuration (PostgreSQL / Supabase)
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
     DATABASE_URL = 'postgresql://postgres@127.0.0.1:5433/mentora_db'
@@ -95,14 +98,24 @@ if not DATABASE_URL:
 is_local_db = any(local in DATABASE_URL for local in ('localhost', '127.0.0.1', 'pg_data'))
 db_ssl_require = (not DEBUG) and (not is_local_db)
 
+# Supabase Transaction Pooler detection (port 6543)
+is_transaction_pooler = ':6543' in DATABASE_URL
+
+# Connection lifetime: modest age (60s) for Render free tier with Supabase; 0 for pooler; 600s for local
+default_conn_max_age = '0' if is_transaction_pooler else ('60' if not is_local_db else '600')
+
 DATABASES = {
     'default': dj_database_url.config(
         default=DATABASE_URL,
-        conn_max_age=int(os.environ.get('CONN_MAX_AGE', '600')),
+        conn_max_age=int(os.environ.get('CONN_MAX_AGE', default_conn_max_age)),
         conn_health_checks=True,
         ssl_require=db_ssl_require,
     )
 }
+
+# When using Supabase Transaction Pooler (port 6543), prepared server-side cursors must be disabled
+if is_transaction_pooler or os.environ.get('DISABLE_SERVER_SIDE_CURSORS', 'False').lower() in ('true', '1', 'yes'):
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
 
 # Custom User Model
 AUTH_USER_MODEL = 'core.User'
@@ -133,17 +146,50 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
-# Whitenoise storage configuration
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
+# Persistent File Storage (Supabase Storage S3-compatible integration or Local FileSystem)
+USE_SUPABASE_STORAGE = os.environ.get('USE_SUPABASE_STORAGE', 'False').lower() in ('true', '1', 'yes') or bool(
+    os.environ.get('SUPABASE_STORAGE_ACCESS_KEY_ID') or os.environ.get('AWS_ACCESS_KEY_ID')
+)
 
-# Media files (User uploads, avatars, submission attachments)
+if USE_SUPABASE_STORAGE:
+    AWS_ACCESS_KEY_ID = os.environ.get('SUPABASE_STORAGE_ACCESS_KEY_ID') or os.environ.get('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('SUPABASE_STORAGE_SECRET_ACCESS_KEY') or os.environ.get('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('SUPABASE_STORAGE_BUCKET_NAME') or os.environ.get('AWS_STORAGE_BUCKET_NAME', 'mentora-media')
+
+    supabase_ref = os.environ.get('SUPABASE_PROJECT_REF', '').strip()
+    default_endpoint = f"https://{supabase_ref}.storage.supabase.co/storage/v1/s3" if supabase_ref else None
+    AWS_S3_ENDPOINT_URL = os.environ.get('SUPABASE_STORAGE_ENDPOINT_URL') or os.environ.get('AWS_S3_ENDPOINT_URL') or default_endpoint
+    AWS_S3_REGION_NAME = os.environ.get('SUPABASE_STORAGE_REGION', 'us-east-1')
+
+    # Supabase S3 Compatibility settings:
+    # 1. Private buckets: Supabase handles permissions, omit object-level ACLs to avoid 400 errors
+    AWS_DEFAULT_ACL = None
+    # 2. Short-lived signed URLs for viewing private media (default 1 hour = 3600 seconds)
+    AWS_QUERYSTRING_AUTH = True
+    AWS_QUERYSTRING_EXPIRE = int(os.environ.get('SUPABASE_STORAGE_URL_EXPIRE', '3600'))
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_S3_FILE_OVERWRITE = False
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+else:
+    # Local Development Storage
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+
+# Media files fallback / local directory
 MEDIA_URL = '/media/'
 MEDIA_ROOT = Path(os.environ.get('MEDIA_ROOT', str(BASE_DIR / 'media')))
 

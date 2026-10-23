@@ -117,9 +117,12 @@ def profile_view(request):
         # Handle photo upload
         if 'profile_photo' in request.FILES:
             photo = request.FILES['profile_photo']
-            # Basic validation
             if photo.size > 5 * 1024 * 1024:
                 messages.error(request, "Profile photo must be less than 5MB.")
+                return redirect('student_profile')
+            ext = os.path.splitext(photo.name)[1].lower()
+            if ext not in ('.jpg', '.jpeg', '.png', '.webp') or not getattr(photo, 'content_type', '').startswith('image/'):
+                messages.error(request, "Please upload a valid image file (JPG, PNG, or WebP).")
                 return redirect('student_profile')
             student.profile_photo = photo
 
@@ -168,7 +171,15 @@ def vision_view(request):
         vision.long_term_aspirations = long_term_aspirations
 
         if 'vision_board_image' in request.FILES:
-            vision.vision_board_image = request.FILES['vision_board_image']
+            vb_img = request.FILES['vision_board_image']
+            if vb_img.size > 10 * 1024 * 1024:
+                messages.error(request, "Vision board image must be less than 10MB.")
+                return redirect('student_vision')
+            ext = os.path.splitext(vb_img.name)[1].lower()
+            if ext not in ('.jpg', '.jpeg', '.png', '.webp') or not getattr(vb_img, 'content_type', '').startswith('image/'):
+                messages.error(request, "Please upload a valid image file (JPG, PNG, or WebP).")
+                return redirect('student_vision')
+            vision.vision_board_image = vb_img
 
         vision.save()
         messages.success(request, "Your personal vision statement has been updated.")
@@ -376,7 +387,16 @@ def task_detail_submit_view(request, task_id):
         submission.is_draft = is_draft
 
         if 'attachment' in request.FILES:
-            submission.attachment = request.FILES['attachment']
+            attachment_file = request.FILES['attachment']
+            if attachment_file.size > 15 * 1024 * 1024:
+                messages.error(request, "Task attachment must be less than 15MB.")
+                return redirect('student_task_detail', task_id=task.id)
+            ext = os.path.splitext(attachment_file.name)[1].lower()
+            allowed_exts = {'.pdf', '.doc', '.docx', '.txt', '.rtf', '.png', '.jpg', '.jpeg', '.zip'}
+            if ext not in allowed_exts:
+                messages.error(request, f"File format '{ext}' is not permitted. Allowed: PDF, DOC, DOCX, TXT, PNG, JPG, ZIP.")
+                return redirect('student_task_detail', task_id=task.id)
+            submission.attachment = attachment_file
 
         submission.save()
 

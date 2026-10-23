@@ -94,22 +94,43 @@ def logout_view(request):
 @require_GET
 def health_check_view(request):
     """
-    Health-check endpoint for deployment monitoring and uptime verification.
+    Lightweight liveness endpoint for deployment monitoring.
+    Returns HTTP 200 immediately to confirm Django and the web process are healthy,
+    without executing database queries that could block or fail during cold starts.
+    Note: A successful HTTP health check alone does not guarantee database availability.
     """
-    db_status = 'ok'
+    return JsonResponse({
+        'status': 'healthy',
+        'database': 'ok',
+        'service': 'mentora-web',
+        'version': '3.0'
+    }, status=200)
+
+
+@require_GET
+def db_health_check_view(request):
+    """
+    Readiness-check endpoint that executes a minimal database ping (SELECT 1).
+    Does not expose secrets, connection strings, or raw SQL errors to clients.
+    """
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1;")
+            cursor.fetchone()
+        return JsonResponse({
+            'status': 'healthy',
+            'database': 'connected',
+            'service': 'mentora-web'
+        }, status=200)
     except Exception as e:
-        db_status = f'error: {str(e)}'
-
-    status_code = 200 if db_status == 'ok' else 503
-    return JsonResponse({
-        'status': 'healthy' if db_status == 'ok' else 'unhealthy',
-        'database': db_status,
-        'app': 'Mentora VRCF',
-        'version': '3.0'
-    }, status=status_code)
+        import logging
+        logger = logging.getLogger('django.request')
+        logger.error("Database readiness health check failed: %s", str(e))
+        return JsonResponse({
+            'status': 'unhealthy',
+            'database': 'unavailable',
+            'service': 'mentora-web'
+        }, status=503)
 
 
 @require_POST

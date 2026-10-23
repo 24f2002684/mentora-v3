@@ -192,8 +192,69 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Identified {len(raw_rows)} populated scholar rows.")
 
+        # Validate rows and check for duplicate VRCF IDs
+        seen_vrcf_ids = {}
+        validation_errors = []
+        validated_scholars = []
+
+        for excel_row_idx, row in raw_rows:
+            name = str(row[1]).strip() if row[1] else ''
+            cohort = str(row[2]).strip() if row[2] else 'Cohort 1'
+            district = str(row[4]).strip() if row[4] else ''
+            phone_self = str(row[5]).strip() if row[5] else ''
+            gmail_id = str(row[7]).strip() if row[7] else ''
+            course_name = str(row[8]).strip() if row[8] else ''
+            college_info = str(row[10]).strip() if row[10] else ''
+            email_address = str(row[16]).strip() if row[16] else ''
+
+            if not name:
+                validation_errors.append(f"Row {excel_row_idx}: Missing student name.")
+                continue
+
+            norm_name = re.sub(r'[^a-zA-Z0-9]', '', name.lower())
+            vrcf_raw_num = VRCF_ID_MAP.get(norm_name)
+            if not vrcf_raw_num:
+                vrcf_raw_num = f"{len(validated_scholars) + 1:03d}"
+            vrcf_id = f"VRCF-{vrcf_raw_num}"
+
+            if vrcf_id in seen_vrcf_ids:
+                prev_row = seen_vrcf_ids[vrcf_id]
+                validation_errors.append(
+                    f"Duplicate VRCF ID detected: '{vrcf_id}' assigned to both '{name}' (Row {excel_row_idx}) and '{prev_row['name']}' (Row {prev_row['row']})."
+                )
+            else:
+                seen_vrcf_ids[vrcf_id] = {'name': name, 'row': excel_row_idx}
+
+            login_email = email_address if (email_address and '@' in email_address) else (gmail_id if ('@' in gmail_id) else f"vrcf{int(vrcf_raw_num)}@scholar.vrcf.org")
+            username = f"vrcf{int(vrcf_raw_num)}"
+
+            validated_scholars.append({
+                'row': excel_row_idx,
+                'vrcf_id': vrcf_id,
+                'name': name,
+                'cohort': cohort,
+                'username': username,
+                'email': login_email,
+                'course': course_name,
+                'college': college_info,
+                'district': district,
+            })
+
+        if validation_errors:
+            self.stderr.write(self.style.ERROR(f"Validation found {len(validation_errors)} error(s):"))
+            for err in validation_errors:
+                self.stderr.write(self.style.ERROR(f"  - {err}"))
+            return
+
         if dry_run:
-            self.stdout.write(self.style.SUCCESS("Dry run validation complete. Exiting without database modifications."))
+            self.stdout.write(self.style.SUCCESS(f"\n[DRY RUN] Successfully validated {len(validated_scholars)} scholar records with 0 duplicate VRCF IDs."))
+            self.stdout.write("-" * 90)
+            self.stdout.write(f"{'Row':<5} | {'VRCF ID':<10} | {'Scholar Name':<24} | {'Cohort':<10} | {'Username':<10} | {'Course':<20}")
+            self.stdout.write("-" * 90)
+            for s in validated_scholars:
+                self.stdout.write(f"{s['row']:<5} | {s['vrcf_id']:<10} | {s['name'][:24]:<24} | {s['cohort']:<10} | {s['username']:<10} | {s['course'][:20]:<20}")
+            self.stdout.write("-" * 90)
+            self.stdout.write(self.style.SUCCESS(f"All {len(validated_scholars)} records verified. Dry-run complete (no database modifications were made).\n"))
             return
 
         # Perform Transactional Import
@@ -235,8 +296,8 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"Seeded {res_count} curated academic resources."))
 
             # 3. Seed Requested Role Accounts (Admin, Trustee, Mentor)
-            # Admin: admin@gmail.com / admin@123
-            admin_user, _ = User.objects.update_or_create(
+            # Admin: admin@gmail.com / admin@123 (preserves existing password if already updated)
+            admin_user, admin_created = User.objects.update_or_create(
                 username='admin',
                 defaults={
                     'email': 'admin@gmail.com',
@@ -247,11 +308,12 @@ class Command(BaseCommand):
                     'last_name': 'Administrator',
                 }
             )
-            admin_user.set_password('admin@123')
-            admin_user.save()
+            if admin_created or not admin_user.has_usable_password():
+                admin_user.set_password('admin@123')
+                admin_user.save()
 
-            # Trustee: trustee@gmail.com / trustee@123
-            trustee_user, _ = User.objects.update_or_create(
+            # Trustee: trustee@gmail.com / trustee@123 (preserves existing password if already updated)
+            trustee_user, trustee_created = User.objects.update_or_create(
                 username='trustee',
                 defaults={
                     'email': 'trustee@gmail.com',
@@ -260,8 +322,9 @@ class Command(BaseCommand):
                     'last_name': 'Trustee',
                 }
             )
-            trustee_user.set_password('trustee@123')
-            trustee_user.save()
+            if trustee_created or not trustee_user.has_usable_password():
+                trustee_user.set_password('trustee@123')
+                trustee_user.save()
             TrusteeProfile.objects.update_or_create(
                 user=trustee_user,
                 defaults={
@@ -389,8 +452,9 @@ class Command(BaseCommand):
                         'phone': phone_self,
                     }
                 )
-                user.set_password(default_password)
-                user.save()
+                if created or not user.has_usable_password():
+                    user.set_password(default_password)
+                    user.save()
 
                 # College district extract
                 college_district = ''

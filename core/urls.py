@@ -7,6 +7,7 @@ urlpatterns = [
     path('auth/redirect/', views.role_redirect_view, name='role_redirect'),
     path('auth/change-password/', views.change_password_view, name='auth_change_password'),
     path('health/', views.health_check_view, name='health_check'),
+    path('health/db/', views.db_health_check_view, name='health_check_db'),
     path('api/theme/toggle/', views.toggle_theme_view, name='toggle_theme'),
     path('api/notifications/<int:notif_id>/read/', views.mark_notification_read_view, name='mark_notification_read'),
     path('api/notifications/mark-all-read/', views.mark_all_notifications_read_view, name='mark_all_notifications_read'),

@@ -192,64 +192,38 @@ Configure these in the Render Dashboard under **Environment Variables**:
 
 | Variable Name | Required | Example / Recommended Value | Description |
 |---|---|---|---|
-| `DATABASE_URL` | **Yes** | `postgres://user:pass@dpg-xxx.oregon-postgres.render.com/mentora_db` | Internal Database URL from your Render PostgreSQL instance |
+| `DATABASE_URL` | **Yes** | `postgresql://postgres.[REF]:[PASS]@aws-0-[REGION].pooler.supabase.com:5432/postgres` | Supabase IPv4 Session Pooler connection string |
 | `SECRET_KEY` | **Yes** | *Generate a 50+ character random string* | Cryptographic signing key. Never use the default in production |
 | `DEBUG` | **Yes** | `False` | Disables debug mode and activates security features |
 | `ALLOWED_HOSTS` | Optional | `your-app.onrender.com,localhost` | Render automatically populates `RENDER_EXTERNAL_HOSTNAME` if omitted |
 | `CSRF_TRUSTED_ORIGINS` | Optional | `https://your-app.onrender.com` | Automatically derived from `RENDER_EXTERNAL_HOSTNAME`, or set explicitly |
+| `USE_SUPABASE_STORAGE` | **Yes** | `True` | Activates Supabase Storage S3-compatible backend for persistent media |
+| `SUPABASE_PROJECT_REF` | **Yes** | `<project-ref>` | Supabase Project Reference ID |
+| `SUPABASE_STORAGE_ACCESS_KEY_ID` | **Yes** | `<access-key-id>` | S3 Access Key from Supabase Dashboard -> Storage -> S3 Access Keys |
+| `SUPABASE_STORAGE_SECRET_ACCESS_KEY` | **Yes** | `<secret-access-key>` | S3 Secret Key from Supabase Dashboard -> Storage -> S3 Access Keys |
+| `SUPABASE_STORAGE_ENDPOINT_URL` | **Yes** | `https://<ref>.storage.supabase.co/storage/v1/s3` | Supabase S3 Gateway endpoint |
+| `SUPABASE_STORAGE_BUCKET_NAME` | Optional | `mentora-media` | Private storage bucket name (default: `mentora-media`) |
 | `GEMINI_API_KEY` | **Yes** | `AIzaSy...` | Google Gemini API key for the Socratic AI Mentor |
 | `GEMINI_MODEL` | Optional | `gemini-2.5-flash` | Gemini model identifier (default: `gemini-2.5-flash`) |
-| `SESSION_COOKIE_SECURE`| Optional | `True` | Forces HTTPS for session cookies (defaults to `True` when `DEBUG=False`) |
-| `CSRF_COOKIE_SECURE` | Optional | `True` | Forces HTTPS for CSRF cookies (defaults to `True` when `DEBUG=False`) |
-| `SECURE_SSL_REDIRECT` | Optional | `True` | Redirects all HTTP traffic to HTTPS (defaults to `True` when `DEBUG=False`) |
-| `MEDIA_ROOT` | Optional | `/var/data/media` | Path if a Render Persistent Disk is attached for scholar uploads |
+
+> For a complete, step-by-step walkthrough on setting up Supabase, obtaining keys, and deploying, see the dedicated [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md).
 
 ---
 
-### D. Step-by-Step Render Deployment Instructions
+### D. Step-by-Step Render + Supabase Deployment Instructions
 
-#### Step 1: Create a PostgreSQL Database on Render
-1. Log in to your [Render Dashboard](https://dashboard.render.com/).
-2. Click **New +** and select **PostgreSQL**.
-3. Fill in the details:
-   - **Name**: `mentora-postgres`
-   - **Database**: `mentora_db`
-   - **User**: `mentora_user`
-   - **Region**: Choose the region closest to you (e.g. *Singapore* or *Oregon*).
-   - **Plan**: *Free* or *Starter*.
-4. Click **Create Database**.
-5. Once provisioned, locate the **Internal Database URL** (e.g., `postgres://mentora_user:password@dpg-xxxx:5432/mentora_db`). Copy this connection string.
+#### Step 1: Create Supabase PostgreSQL & Storage
+1. Create a project at [supabase.com](https://supabase.com).
+2. Under **Project Settings** -> **Database** -> **Connection Pooling**, copy the **Session Pooler** URI (Port `5432`).
+3. Under **Storage**, create a private bucket named `mentora-media`.
+4. Under **Project Settings** -> **Storage** -> **S3 Access Keys**, generate an S3 Access Key & Secret.
 
-#### Step 2: Create the Web Service on Render
-1. In the Render Dashboard, click **New +** and select **Web Service**.
-2. Connect your GitHub repository (`mentora-v3`).
-3. Configure the service settings:
-   - **Name**: `mentora-vrcf`
-   - **Region**: Select the **same region** as your PostgreSQL database.
-   - **Branch**: `main`
-   - **Runtime**: `Python 3`
-   - **Build Command**: `./build.sh`
-   - **Start Command**: `gunicorn mentora.wsgi:application`
-   - **Plan**: *Free* or *Starter*.
-
-#### Step 3: Add Environment Variables
-1. Scroll down to **Environment Variables** (or open the **Environment** tab).
-2. Add each key-value pair listed in the table above:
-   - `DATABASE_URL`: Paste the Internal Database URL from Step 1.
-   - `SECRET_KEY`: Enter a secure random string (Render can generate this automatically).
-   - `DEBUG`: `False`
-   - `GEMINI_API_KEY`: Enter your Google Gemini API key.
-   - `GEMINI_MODEL`: `gemini-2.5-flash`
-3. Click **Create Web Service**.
-
-#### Step 4: Verify the Build & Deployment
-Render will automatically execute `./build.sh`:
-1. Installs dependencies from `requirements.txt`.
-2. Runs `python manage.py collectstatic --no-input` (WhiteNoise caches all CSS, JS, and branding logos).
-3. Runs `python manage.py migrate --no-input` (applies all schema migrations to your online PostgreSQL database).
-4. Starts Gunicorn with `gunicorn mentora.wsgi:application`.
-
-Once the logs display `==> Your service is live at https://mentora-vrcf.onrender.com`, the web platform is running!
+#### Step 2: Create Web Service on Render
+1. Connect your GitHub repository (`mentora-v3`) at [dashboard.render.com](https://dashboard.render.com).
+2. Set Build Command: `./build.sh`
+3. Set Start Command: `gunicorn mentora.wsgi:application`
+4. Add the environment variables listed in the table above.
+5. Click **Create Web Service**. Render runs `./build.sh`, applies Supabase migrations, and goes live.
 
 ---
 

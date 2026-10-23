@@ -114,3 +114,10 @@ class AuthenticationAndSecurityTests(TestCase):
         data = response.json()
         self.assertEqual(data['status'], 'healthy')
         self.assertEqual(data['database'], 'ok')
+
+    def test_db_health_check_endpoint(self):
+        response = self.client.get(reverse('health_check_db'))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['status'], 'healthy')
+        self.assertEqual(data['database'], 'connected')
