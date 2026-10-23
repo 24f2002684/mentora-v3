@@ -171,37 +171,43 @@ Supabase Storage provides an S3-compatible API that connects directly to Django'
 ## Step 7: Import Real Student Records into Supabase PostgreSQL
 
 > [!NOTE]
-> The student import command is deliberately **not** executed in `build.sh` so that student records are not re-processed on every deploy. You run this command **once** from the Render Shell.
+> The student import command is deliberately **not** executed in `build.sh` so that student records are not re-processed on every deploy.
+>
+> On Render's **Free Tier**, the interactive Web Shell tab in the dashboard is not available. Because Supabase PostgreSQL is connected via the IPv4 Session Pooler, you can run the import command directly from your local terminal/PowerShell connected to Supabase:
 
-1. In the Render Dashboard, navigate to your `mentora-vrcf` web service.
-2. Click the **Shell** tab on the left to open a secure console inside the running container.
-3. **Step 7A: Run Dry-Run Validation** (validates the spreadsheet without modifying the database):
-   ```bash
-   python manage.py import_students "prereq_data/VRCF Student DB.xlsx" --dry-run
-   ```
-   *Expected Output*:
-   ```text
-   [DRY RUN] Successfully validated 43 scholar records with 0 duplicate VRCF IDs.
-   ------------------------------------------------------------------------------------------
-   Row   | VRCF ID    | Scholar Name             | Cohort     | Username   | Course              
-   ------------------------------------------------------------------------------------------
-   2     | VRCF-003   | Lakshana R               | Cohort 1   | vrcf3      | B.Com
-   ...
-   All 43 records verified. Dry-run complete (no database modifications were made).
-   ```
-4. **Step 7B: Execute the Real Import**:
-   ```bash
-   python manage.py import_students "prereq_data/VRCF Student DB.xlsx"
-   ```
-   *Output*:
-   ```text
-   Seeded 10 core competencies.
-   Seeded 6 curated academic resources.
-   Seeded Admin, Trustee, and 4 Mentor foundation accounts.
-   Successfully imported and provisioned 43 VRCF scholars!
-   Generated IMPORT_REPORT.md successfully.
-   ```
-   *Note: If run again in the future, this command is completely idempotent. It uses `update_or_create` and preserves any passwords students have already changed.*
+### Running from Local Windows PowerShell:
+```powershell
+# 1. Set the Supabase Session Pooler connection string in your terminal session
+$env:DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
+
+# 2. Step 7A: Run Dry-Run Validation
+.\.venv\Scripts\python.exe manage.py import_students "prereq_data/VRCF Student DB.xlsx" --dry-run
+
+# 3. Step 7B: Execute the Real Import
+.\.venv\Scripts\python.exe manage.py import_students "prereq_data/VRCF Student DB.xlsx"
+```
+
+### Running on macOS/Linux (or Render SSH/Shell if on paid plan):
+```bash
+export DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
+python manage.py import_students "prereq_data/VRCF Student DB.xlsx" --dry-run
+python manage.py import_students "prereq_data/VRCF Student DB.xlsx"
+```
+
+*Expected Output*:
+```text
+=== Mentora Student Importer ===
+Workbook Path: prereq_data/VRCF Student DB.xlsx
+Mode: REAL IMPORT
+Identified 43 populated scholar rows.
+Seeded 10 core competencies.
+Seeded 6 curated academic resources.
+Seeded Admin, Trustee, and 4 Mentor foundation accounts (Lead, Manikandan, Avanthikaa, Ram Kumar).
+
+Successfully imported and provisioned 43 VRCF scholars!
+Generated IMPORT_REPORT.md successfully.
+```
+*Note: If run again in the future, this command is completely idempotent. It uses `update_or_create` and preserves any passwords students have already changed.*
 
 ---
 
